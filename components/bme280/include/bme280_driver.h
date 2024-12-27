@@ -11,6 +11,7 @@
 #ifndef _BME280_DRIVER_H_
 #define _BME280_DRIVER_H_
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,7 +42,22 @@ extern "C" {
 typedef struct bme280_t bme280_t;
 
 /* Functions ------------------------------------------------------------------------------------------------*/
-/*
+
+ /*
+  * @function readBME280Pressure
+  *
+  * @abstract This function reads the raw pressure data from the BME280 sensor and compensates it.
+  *
+  * @param[in] bme280: BME280 instance
+  *
+  * @param[out] pressure: Pointer to store the compensated pressure value
+  *
+  * @return
+  *      - esp_err_t status code
+  */
+ esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure);
+
+ /*
  * @function createBME280Instance
  *
  * @abstract This function creates BME280 sensor instance
