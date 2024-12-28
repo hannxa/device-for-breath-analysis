@@ -41,7 +41,20 @@ extern "C" {
  */
 esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c_bus_handle);
 
-    esp_err_t getBME280Temperature(bme280_t * bme280, float *temperature);
+/*
+ * @function getBME280Temperature
+ *
+ * @abstract This function reads BME280 sensor temperature
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] temperature: Temperature value
+ *
+ * @return
+ *    - esp_err_t status code
+ */
+
+esp_err_t getBME280Temperature(bme280_t * bme280, float *temperature);
 
 #ifdef __cplusplus
 }
