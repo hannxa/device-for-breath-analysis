@@ -55,6 +55,7 @@ typedef struct bme280_t bme280_t;
   * @return
   *      - esp_err_t status code
   */
+
  esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure);
 
  /*

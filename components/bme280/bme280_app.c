@@ -94,6 +94,7 @@ esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c
     return ESP_OK;
 }
 
+
 esp_err_t getBME280Pressure(bme280_t * bme280, float * pressure) {
     if (bme280 == NULL || pressure == NULL) {
         return ESP_ERR_INVALID_ARG;

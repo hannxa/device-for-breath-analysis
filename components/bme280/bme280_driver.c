@@ -426,6 +426,7 @@ int32_t compensateBME280Temperature(bme280_t * bme280, int32_t input_temperature
     return temperature;
 }
 
+
 esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure) {
     uint8_t status;
 
