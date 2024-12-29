@@ -426,22 +426,18 @@ int32_t compensateBME280Temperature(bme280_t * bme280, int32_t input_temperature
     return temperature;
 }
 
-
 esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure) {
-    uint8_t status;
 
     if (bme280 == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
 
-    esp_err_t error = readBME280(bme280, BME280_REGISTER_STATUS, &status, 1);
-    if (error != ESP_OK)
-    {
+    if (!validateSensor(bme280)) {
         return ESP_ERR_INVALID_STATE;
     }
 
     uint8_t buffer[3];
-    error = readBME280(bme280, BME280_REGISTER_PRESSURE_MSB, buffer, 3);
+    esp_err_t error = readBME280(bme280, BME280_REGISTER_PRESSURE_MSB, buffer, 3);
     if (error != ESP_OK) {
         return error;
     }
