@@ -456,4 +456,25 @@ uint32_t compensateBME280Humidity(bme280_t * bme280, int32_t input_humidity) {
     return(uint32_t)(humdidity >> 12);
 }
 
+esp_err_t readBME280Temperature(bme280_t * bme280, int32_t * int32_temp) {
+    if (bme280 == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (!validateSensor(bme280)) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    uint8_t data_buffer[3];
+
+    esp_err_t error = readBME280(bme280, BME280_REGISTER_TEMPERATURE_MSB, data_buffer, sizeof(data_buffer));
+    if (error != ESP_OK) {
+        return error;
+    }
+
+    *int32_temp = compensateBME280Temperature(bme280, (data_buffer[0] << 12) | (data_buffer[1] << 4) | (data_buffer[2] >> 4));
+
+    return ESP_OK;
+}
+
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/

@@ -155,6 +155,24 @@ uint32_t compensateBME280Pressure(bme280_t * bme280, int32_t input_pressure);
  */
 uint32_t compensateBME280Humidity(bme280_t * bme280, int32_t input_humidity);
 
+/*
+ * @function readBME280Temperature
+ *
+ * @abstract This function reads BME280 sensor temperature
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] int32_temp: Temperature value
+ *
+ * @return
+ *    - esp_err_t status code
+ */
+
+esp_err_t readBME280Temperature(bme280_t * bme280, int32_t * int32_temp);
+
+
+
+
 #ifdef __cplusplus
 }
 #endif

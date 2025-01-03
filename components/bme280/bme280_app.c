@@ -93,4 +93,13 @@ esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c
 }
 
 
+esp_err_t getBME280Temperature(bme280_t * bme280, float *temperature) {
+    int32_t temperature_local;
+    esp_err_t error = readBME280Temperature(bme280, &temperature_local);
+    if (error == ESP_OK) {
+        convertReadTemperatureToFloat(&temperature_local, temperature);
+    }
+    return error;
+}
+
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
