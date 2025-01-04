@@ -114,6 +114,35 @@ esp_err_t setBME280Mode(bme280_t * bme280, bme280_mode_t mode);
  *      - true: On success
  *      - false: On fail
  */
+
+esp_err_t readBME280Humidity(bme280_t *bme280, uint32_t *humidity);
+ /*
+ * @function readBME280Humidity
+ *
+ * @abstract This function reads BME280 sensor raw humidity value
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] humidity: raw humidity value
+ *
+ * @return
+ *    - esp_err_t status code
+ */
+
+esp_err_t getBME280Humidity(bme280_t *bme280, float *humidity);
+ /*
+  * @function getBME280Humidity
+  *
+  * @abstract This function reads the humidity from the BME280 sensor and returns it as a float value.
+  *
+  * @param[in] bme280: BME280 instance
+  *
+  * @param[out] humidity: Humidity converted value
+  *
+  * @return
+  *   - esp_err_t status code
+  */
+
 bool isBME280Sampling(bme280_t * bme280);
 
 /*
