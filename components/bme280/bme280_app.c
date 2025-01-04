@@ -39,7 +39,6 @@ static const char * TAG = "bme280_app";
  */
 static void convertReadTemperatureToFloat(int32_t * temperature_in, float * temperature_out);
 
-
 /*
  * @function convertReadPressureToFloat
  *
@@ -72,8 +71,7 @@ static void convertReadTemperatureToFloat(int32_t * temperature_in, float * temp
 }
 
 static void convertReadPressureToFloat(uint32_t * pressure_in, float * pressure_out) {
-    *pressure_out = (float)*pressure_in * (1.0f/256.0f);
-}
+    *pressure_out = (float)*pressure_in * (1.0f/256.0f);}
 
 static void convertReadHumidityToFloat(uint32_t * humidity_in, float * humidity_out) {
     *humidity_out = (*humidity_in == UINT32_MAX) ? -1.0f : (float)*humidity_in * (1.0f/1024.0f);
@@ -95,17 +93,23 @@ esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c
 }
 
 
-esp_err_t getBME280Pressure(bme280_t * bme280, float * pressure) {
+esp_err_t getBME280Temperature(bme280_t * bme280, float *temperature) {
+    int32_t temperature_local;
+    esp_err_t error = readBME280Temperature(bme280, &temperature_local);
+    if (error == ESP_OK) {
+        convertReadTemperatureToFloat(&temperature_local, temperature);
+    }
+    return error;
+}
 
+esp_err_t getBME280Pressure(bme280_t * bme280, float *pressure) {
     uint32_t raw_pressure;
     esp_err_t error = readBME280Pressure(bme280, &raw_pressure);
 
     if (error == ESP_OK) {
         convertReadPressureToFloat(&raw_pressure, pressure);
     }
-
     return error;
 }
-
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/

@@ -41,8 +41,6 @@ extern "C" {
  */
 esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c_bus_handle);
 
-    esp_err_t getBME280Pressure(bme280_t * bme280, float * pressure);
-
 #ifdef __cplusplus
 }
 #endif
