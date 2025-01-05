@@ -102,4 +102,14 @@ esp_err_t getBME280Temperature(bme280_t * bme280, float *temperature) {
     return error;
 }
 
+esp_err_t getBME280Pressure(bme280_t * bme280, float *pressure) {
+    uint32_t raw_pressure;
+    esp_err_t error = readBME280Pressure(bme280, &raw_pressure);
+
+    if (error == ESP_OK) {
+        convertReadPressureToFloat(&raw_pressure, pressure);
+    }
+    return error;
+}
+
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
