@@ -47,4 +47,18 @@ esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c
 
 #endif // _BME280_APP_H_
 
+/*
+ * @function getBME280Humidity
+ *
+ * @abstract This function reads BME280 sensor humidity
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] pressure: humidity value
+ *
+ * @return
+ *    - esp_err_t status code
+*/
+esp_err_t getBME280Humidity(bme280_t * bme280, float *humidity);
+
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
