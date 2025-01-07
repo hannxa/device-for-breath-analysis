@@ -169,8 +169,6 @@ uint32_t compensateBME280Humidity(bme280_t * bme280, int32_t input_humidity);
 */
 esp_err_t readBME280Humidity(bme280_t *bme280, uint32_t *humidity);
 
-
-
 #ifdef __cplusplus
 }
 #endif
