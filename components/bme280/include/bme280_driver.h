@@ -186,7 +186,20 @@ esp_err_t readBME280Temperature(bme280_t * bme280, int32_t * int32_temp);
  */
 
 esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure);
-
+ 
+ /*
+* @function readBME280Humidity
+*
+* @abstract This function reads BME280 sensor raw humidity value
+*
+* @param[in] bme280: BME280 instance
+*
+* @param[out] humidity: raw humidity value
+*
+* @return
+*    - esp_err_t status code
+*/
+ esp_err_t readBME280Humidity(bme280_t *bme280, uint32_t *humidity);
 
 #ifdef __cplusplus
 }
