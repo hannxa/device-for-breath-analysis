@@ -155,10 +155,27 @@ uint32_t compensateBME280Pressure(bme280_t * bme280, int32_t input_pressure);
  */
 uint32_t compensateBME280Humidity(bme280_t * bme280, int32_t input_humidity);
 
+/*
+* @function readBME280Humidity
+*
+* @abstract This function reads BME280 sensor raw humidity value
+*
+* @param[in] bme280: BME280 instance
+*
+* @param[out] humidity: raw humidity value
+*
+* @return
+*    - esp_err_t status code
+*/
+esp_err_t readBME280Humidity(bme280_t *bme280, uint32_t *humidity);
+
+
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif // _BME280_DRIVER_H_
+
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/

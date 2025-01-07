@@ -41,6 +41,19 @@ extern "C" {
  */
 esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c_bus_handle);
 
+/*
+ * @function getBME280Humidity
+ *
+ * @abstract This function reads the humidity from the BME280 sensor and returns it as a float value.
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] humidity: Humidity converted value
+ *
+ * @return
+ *   - esp_err_t status code
+ */
+esp_err_t getBME280Humidity(bme280_t *bme280, float *humidity);
 #ifdef __cplusplus
 }
 #endif
