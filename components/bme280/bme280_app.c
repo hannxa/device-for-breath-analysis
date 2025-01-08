@@ -121,15 +121,5 @@ esp_err_t getBME280Pressure(bme280_t * bme280, float *pressure) {
     return error;
 }
 
-esp_err_t getBME280Humidity (bme280_t *bme280, float *humidity) {
-    uint32_t humidity_raw;
-
-    esp_err_t err = readBME280Humidity(bme280, &humidity_raw);
-
-    if(err == ESP_OK) {
-        convertReadHumidityToFloat(&humidity_raw, humidity);
-    }
-    return err;
-}
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
