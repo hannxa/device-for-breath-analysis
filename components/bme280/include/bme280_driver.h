@@ -11,6 +11,7 @@
 #ifndef _BME280_DRIVER_H_
 #define _BME280_DRIVER_H_
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,7 +42,8 @@ extern "C" {
 typedef struct bme280_t bme280_t;
 
 /* Functions ------------------------------------------------------------------------------------------------*/
-/*
+
+ /*
  * @function createBME280Instance
  *
  * @abstract This function creates BME280 sensor instance
@@ -156,6 +158,37 @@ uint32_t compensateBME280Pressure(bme280_t * bme280, int32_t input_pressure);
 uint32_t compensateBME280Humidity(bme280_t * bme280, int32_t input_humidity);
 
 /*
+ * @function readBME280Temperature
+ *
+ * @abstract This function reads BME280 sensor temperature
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] int32_temp: Temperature value
+ *
+ * @return
+ *    - esp_err_t status code
+ */
+
+esp_err_t readBME280Temperature(bme280_t * bme280, int32_t * int32_temp);
+
+/*
+ * @function readBME280Pressure
+ *
+ * @abstract This function reads BME280 sensor pressure
+ *
+ * @param[in] bme280: BME280 instance
+ *
+ * @param[out] pressure: Pressure value
+ *
+ * @return
+ *    - esp_err_t status code
+ */
+
+esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure);
+ 
+ /*
+>>>>>>> main
 * @function readBME280Humidity
 *
 * @abstract This function reads BME280 sensor raw humidity value

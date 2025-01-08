@@ -78,14 +78,15 @@ void vBME280Task(void * pvParameters) {
 
     ESP_ERROR_CHECK(setBME280Mode(bme280, BME280_MODE_CYCLE));
 
+
     while (1) {
+
         do {
             vTaskDelay(pdMS_TO_TICKS(1));
         } while(isBME280Sampling(bme280));
-        
+
         vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
-
     removeBME280(bme280);
     i2c_del_master_bus(i2c_bus_handle);
 }

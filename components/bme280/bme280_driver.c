@@ -304,6 +304,7 @@ static esp_err_t calibrateBME280(bme280_t * bme280) {
     return ESP_OK;
 }
 
+
 /* Exported function definitions -------------------------------------------------------------------------------------*/
 bme280_t * createBME280Instance(i2c_master_bus_handle_t i2c_bus_handle) {
     bme280_t * bme280 = malloc(sizeof(bme280_t));
@@ -425,6 +426,8 @@ int32_t compensateBME280Temperature(bme280_t * bme280, int32_t input_temperature
     return temperature;
 }
 
+
+
 uint32_t compensateBME280Pressure(bme280_t * bme280, int32_t input_pressure) {
     int64_t var1, var2, pressure;
     var1 = ((int64_t)bme280->temperature_fine) - 128000;
@@ -472,5 +475,66 @@ esp_err_t readBME280Humidity(bme280_t *bme280, uint32_t *humidity) {
     *humidity = compensateBME280Humidity(bme280, (buffer[0] << 8) | buffer[1]);
     return ESP_OK;
 }
+
+esp_err_t readBME280Temperature(bme280_t * bme280, int32_t * int32_temp) {
+    if (bme280 == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (!validateSensor(bme280)) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    uint8_t data_buffer[3];
+
+    esp_err_t error = readBME280(bme280, BME280_REGISTER_TEMPERATURE_MSB, data_buffer, sizeof(data_buffer));
+    if (error != ESP_OK) {
+        return error;
+    }
+
+    *int32_temp = compensateBME280Temperature(bme280, (data_buffer[0] << 12) | (data_buffer[1] << 4) | (data_buffer[2] >> 4));
+
+    return ESP_OK;
+}
+
+esp_err_t readBME280Pressure(bme280_t *bme280, uint32_t *pressure) {
+
+    if (bme280 == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    if (!validateSensor(bme280)) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    uint8_t buffer[3];
+    esp_err_t error = readBME280(bme280, BME280_REGISTER_PRESSURE_MSB, buffer, 3);
+    if (error != ESP_OK) {
+        return error;
+    }
+
+    *pressure = compensateBME280Pressure(bme280, (buffer[0] << 12) | (buffer[1] << 4) | (buffer[2] >> 4));
+
+    return ESP_OK;
+}
+
+esp_err_t readBME280Humidity(bme280_t *bme280, uint32_t *humidity) {
+    if(bme280 == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if(!validateSensor(bme280)) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    uint8_t buffer[2];
+
+    esp_err_t err = readBME280(bme280, BME280_REGISTER_HUMIDITY_MSB, buffer, sizeof(buffer));
+    if (err != ESP_OK) {
+        return err;
+    }
+    *humidity = compensateBME280Humidity(bme280, (buffer[0] << 8) | buffer[1]);
+    return ESP_OK;
+}
+
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
