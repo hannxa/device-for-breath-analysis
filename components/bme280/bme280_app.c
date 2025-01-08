@@ -91,7 +91,16 @@ esp_err_t initializeBME280Device(bme280_t ** bme280, i2c_master_bus_handle_t i2c
 
     return ESP_OK;
 }
+esp_err_t getBME280Humidity (bme280_t *bme280, float *humidity) {
+    uint32_t humidity_raw;
 
+    esp_err_t err = readBME280Humidity(bme280, &humidity_raw);
+
+    if(err == ESP_OK) {
+        convertReadHumidityToFloat(&humidity_raw, humidity);
+    }
+    return err;
+}
 
 esp_err_t getBME280Temperature(bme280_t * bme280, float *temperature) {
     int32_t temperature_local;
@@ -112,15 +121,5 @@ esp_err_t getBME280Pressure(bme280_t * bme280, float *pressure) {
     return error;
 }
 
-esp_err_t getBME280Humidity (bme280_t *bme280, float *humidity) {
-    uint32_t humidity_raw;
-
-    esp_err_t err = readBME280Humidity(bme280, &humidity_raw);
-
-    if(err == ESP_OK) {
-        convertReadHumidityToFloat(&humidity_raw, humidity);
-    }
-    return err;
-}
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
