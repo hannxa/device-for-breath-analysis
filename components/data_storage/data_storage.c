@@ -1,128 +1,134 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define MAX_FLASH_MEMORY 3774874
-#define DATA_POINT_SIZE 14
+// Maksymalna dostępna pamięć Flash dla danych (w bajtach)
+#define MAX_FLASH_MEMORY 1887436 // 2 MB - 10% na przyszłe funkcje. (jednostka-bajt, czyli to 2*1024*1024*0.9) (te 2 MB to mi wyszły z funkcji sprawdzającej ilość wolnej pamięcie FLASH)
+#define MAX_MEMORY_FOR_ONE_MEASUREMENT (MAX_FLASH_MEMORY / 4)
+#define DATA_POINT_SIZE sizeof(float) // Rozmiar jednego pomiaru (w bajtach)
+#define DATA_POINTS 2000 // Liczba punktów dla jednego pomiaru?? Tak to rozumiem, nie jestem pewna
+#define MAX_DATA_POINTS (MAX_MEMORY_FOR_ONE_MEASUREMENT/DATA_POINT_SIZE) // Maksymalna liczba punktów pomiarowych (dla jednego typu pomiaru)
 
-#define DATA_POINTS 200000
+#define TEMP_START_ADDR 0
+#define PRESS_START_ADDR (1 * MAX_DATA_POINTS * DATA_POINT_SIZE)
+#define HUMID_START_ADDR (2 * MAX_DATA_POINTS * DATA_POINT_SIZE)
+#define AUDIO_START_ADDR (3 * MAX_DATA_POINTS * DATA_POINT_SIZE) //
 
-#define MAX_DATA_POINTS (MAX_FLASH_MEMORY / DATA_POINT_SIZE)
+// Wspólna tablica dla wszystkich pomiarów
+uint8_t measurements[4 * MAX_DATA_POINTS * DATA_POINT_SIZE];
 
-#if DATA_POINTS > MAX_DATA_POINTS
-#error "DATA_POINTS size exceeds the maximum allowed value."
-#endif
+// Indeksy odczytu i zapisu dla każdego typu pomiaru
+static int read_index[4] = {0, 0, 0, 0};
+static int save_index[4] = {0, 0, 0, 0};
+static int data_count[4] = {0, 0, 0, 0}; // Liczba dostępnych danych w buforze
 
-typedef struct {
-    float temperature;
-    float humidity;
-    float pressure;
-    int16_t audio;
-} MeasurementData;
-
-MeasurementData measurements[DATA_POINTS];
-
-typedef struct {
-    float data[DATA_POINTS];
-    int flags[DATA_POINTS];
-    int read_index;
-    int save_index;
-} MeasurementArray;
-
-MeasurementArray temperature_data = { .read_index = 0, .save_index = 0 };
-MeasurementArray humidity_data = { .read_index = 0, .save_index = 0 };
-MeasurementArray pressure_data = { .read_index = 0, .save_index = 0 };
-MeasurementArray audio_data = { .read_index = 0, .save_index = 0 };
-
-static void reset_save_index_if_needed(MeasurementArray *measurement) {
-    if (measurement->save_index >= DATA_POINTS) {
-        measurement->save_index = 0;
+// Funkcja do zapisywania floata jako uint8_t
+static void saveFloatAsUint(float value, uint8_t table[4]) {
+    uint8_t *bytePointer = (uint8_t *)&value;
+    for (int i = 0; i < 4; i++) {
+        table[i] = bytePointer[i];
     }
 }
 
-static int is_memory_full(MeasurementArray *measurement) {
-    return measurement->flags[measurement->save_index] == 1;
-}
-
-static void store_measurement(float value, MeasurementArray *measurement) {
-    measurement->data[measurement->save_index] = value;
-    measurement->flags[measurement->save_index] = 1;
-    measurement->save_index++;
-}
-
-static void save_measurement(float value, MeasurementArray *measurement) {
-    reset_save_index_if_needed(measurement);
-    if (is_memory_full(measurement)) {
-        printf("Error: Memory full.\n");
-        return;
-    } else {
-        store_measurement(value, measurement);
+// Funkcja do odczytu uint8_t jako float
+static float readUintAsFloat(uint8_t table[4]) {
+    float value;
+    uint8_t *bytePointer = (uint8_t *)&value;
+    for (int i = 0; i < 4; i++) {
+        bytePointer[i] = table[i];
     }
-}
-
-static void reset_read_index_if_needed(MeasurementArray *measurement) {
-    if (measurement->read_index >= DATA_POINTS) {
-        measurement->read_index = 0;
-    }
-}
-
-static int is_data_available(MeasurementArray *measurement) {
-    return measurement->flags[measurement->read_index] != 0;
-}
-
-static float fetch_measurement(MeasurementArray *measurement) {
-    float value = measurement->data[measurement->read_index];
-    measurement->flags[measurement->read_index] = 0; // Reset flag after reading
-    measurement->read_index++;
     return value;
 }
 
-float read_measurement(MeasurementArray *measurement) {
-    reset_read_index_if_needed(measurement);
-    if (!is_data_available(measurement)) {
-        printf("Error: No data to read.\n");
-        return -1; // Return -1 in case of error
+// Funkcja do zapisywania pomiaru
+static void save_measurement(int type, float value) {
+    if (data_count[type] >= MAX_DATA_POINTS) {
+        printf("Error: Memory full for type %d. Cannot overwrite unread data.\n", type);
+        return;
     }
-    return fetch_measurement(measurement);
+
+    int base_addr = type * MAX_DATA_POINTS * DATA_POINT_SIZE;
+
+    // Konwersja float na uint8_t
+    uint8_t float_as_uint[DATA_POINT_SIZE];
+    saveFloatAsUint(value, float_as_uint);
+
+    // Zapis danych w tablicy
+    for (int i = 0; i < DATA_POINT_SIZE; i++) {
+        measurements[base_addr + save_index[type] * DATA_POINT_SIZE + i] = float_as_uint[i];
+    }
+
+    // Przesunięcie indeksu zapisu
+    save_index[type] = (save_index[type] + 1) % MAX_DATA_POINTS;
+
+    // Zwiększenie liczby dostępnych danych
+    data_count[type]++;
 }
 
+// Funkcja do odczytu pomiaru
+static float read_measurement(int type) {
+    if (data_count[type] <= 0) {
+        printf("Error: No data to read for type %d.\n", type);
+        return -1.0f; // Wartość błędu
+    }
+
+    int base_addr = type * MAX_DATA_POINTS * DATA_POINT_SIZE;
+
+    // Odczyt danych z tablicy
+    uint8_t float_as_uint[DATA_POINT_SIZE];
+    for (int i = 0; i < DATA_POINT_SIZE; i++) {
+        float_as_uint[i] = measurements[base_addr + read_index[type] * DATA_POINT_SIZE + i];
+    }
+
+    // Przesunięcie indeksu odczytu
+    read_index[type] = (read_index[type] + 1) % MAX_DATA_POINTS;
+
+    // Zmniejszenie liczby dostępnych danych
+    data_count[type]--;
+
+    // Konwersja uint8_t na float
+    return readUintAsFloat(float_as_uint);
+}
+
+// Funkcje specyficzne dla typów pomiarów
 void save_temperature(float temperature) {
-    save_measurement(temperature, &temperature_data);
+    save_measurement(0, temperature);
 }
 
 float read_temperature() {
-    return read_measurement(&temperature_data);
+    return read_measurement(0);
 }
 
 void save_humidity(float humidity) {
-    save_measurement(humidity, &humidity_data);
+    save_measurement(1, humidity);
 }
 
 float read_humidity() {
-    return read_measurement(&humidity_data);
+    return read_measurement(1);
 }
 
 void save_pressure(float pressure) {
-    save_measurement(pressure, &pressure_data);
+    save_measurement(2, pressure);
 }
 
 float read_pressure() {
-    return read_measurement(&pressure_data);
+    return read_measurement(2);
 }
 
-void save_audio(int16_t audio) {
-    save_measurement((float)audio, &audio_data);
+void save_audio(float audio) {
+    save_measurement(3, audio);
 }
 
-int16_t read_audio() {
-    return (int16_t)read_measurement(&audio_data);
+float read_audio() {
+    return read_measurement(3);
 }
 
-float get_memory_usage(MeasurementArray *measurement) {
-    int used_memory = 0;
-    for (int i = 0; i < DATA_POINTS; i++) {
-        if (measurement->flags[i] == 1) {
-            used_memory++;
-        }
+// Funkcja do obliczenia procentu zajętej pamięci
+float get_memory_usage_percentage() {
+    int total_data_points = 0;
+    for (int i = 0; i < 4; i++) {
+        total_data_points += data_count[i];
     }
-    return (used_memory / (float)DATA_POINTS) * 100;
+
+    int used_memory = total_data_points * DATA_POINT_SIZE;
+    return ((float)used_memory / (4 * MAX_DATA_POINTS * DATA_POINT_SIZE)) * 100.0f;
 }
