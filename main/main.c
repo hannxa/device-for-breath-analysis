@@ -21,6 +21,7 @@
 #include "bme280_driver.h"
 #include "driver/i2c_master.h"
 #include "i2c_interface.h"
+#include "inmp441_driver.h"
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
 
@@ -34,6 +35,7 @@ static const char * TAG = "app_main";
 /* External variables ------------------------------------------------------------------------------------------------*/
 TaskHandle_t xChipInfoHandle = NULL;
 TaskHandle_t xBME280Handle = NULL;
+TaskHandle_t xINMP441Handle = NULL;
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
 
@@ -90,12 +92,31 @@ void vBME280Task(void * pvParameters) {
     i2c_del_master_bus(i2c_bus_handle);
 }
 
+void vInitINMP441(void * pvParameters) {
+    ESP_LOGI(TAG, "vInitINMP441 task started");
+    esp_err_t ret = initINMP441();
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "INMP441 initialized successfully in vInitINMP441");
+    } else {
+        ESP_LOGE(TAG, "Failed to initialize INMP441 in vInitINMP441");
+    }
+    vTaskDelete(NULL);
+}
+
 void app_main(void) {
 
     ESP_LOGI(TAG, "Starting app");
 
+    ESP_LOGI(TAG, "Creating CHIPINFO task");
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
+
+    ESP_LOGI(TAG, "Creating BME280 task");
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
+
+    //ESP_LOGI(TAG, "Creating INMP441 task");
+    //xTaskCreate(vInitINMP441, "INMP441", 8192, NULL, tskIDLE_PRIORITY + 3, &xINMP441Handle);
+
+    ESP_LOGI(TAG, "All tasks created");
 
 }
 

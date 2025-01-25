@@ -12,6 +12,7 @@
 #define INMP441_DRIVER_H
 
 /* Includes -------------------------------------------------------------------------------------------------*/
+#include <esp_err.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -26,10 +27,8 @@
 
 /* Functions ------------------------------------------------------------------------------------------------*/
 
-
-
-
-
+esp_err_t initINMP441(void);
+esp_err_t readINMP441Data(uint8_t *data_out, size_t size);
 
 #endif //INMP441_DRIVER_H
 
