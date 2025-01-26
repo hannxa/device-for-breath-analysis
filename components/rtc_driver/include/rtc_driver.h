@@ -31,35 +31,41 @@ typedef struct {
     uint8_t adjust_reason;
 } rtc_time_t;
 
-/*
- * @function set_current_time
+/**
+ * @function set_time
+ * @abstract Sets the current system time based on the provided 10-byte payload.
  *
- * @abstract This function sets the current system time to the specified date and time.
- *
- * @param[in] year: The year to set (e.g., 2025)
- *
- * @param[in] month: The month to set (1-12)
- *
- * @param[in] day: The day to set (1-31)
- *
- * @param[in] hour: The hour to set (0-23)
- *
- * @param[in] minute: The minute to set (0-59)
- *
- * @param[in] second: The second to set (0-59)
- *
- * @param[in] milliseconds The milliseconds to set (0-999)
- *
- * @return true if the time was successfully set, false otherwise
- */
-bool set_current_time();
-
-/*
- * @function get_current_time
- *
- * @abstract This function gets the current system time.
+ * @param[in] payload A 10-byte array containing the time formatted as follows:
+ *            - Byte 0: Lowest 8 bits of the year
+ *            - Byte 1: Highest 8 bits of the year
+ *            - Byte 2: Month
+ *            - Byte 3: Day
+ *            - Byte 4: Hour
+ *            - Byte 5: Minute
+ *            - Byte 6: Second
+ *            - Byte 7: Day of the week
+ *            - Byte 8: Milliseconds
+ *            - Byte 9: Adjust reason
  *
  * @return void
  */
-void get_current_time();
+void set_time();
+
+/**
+ * @function get_time
+ * @abstract Retrieves the current system time and stores it in a 10-byte payload.
+ *
+ * @return uint8_t* Pointer to a 10-byte array containing the time formatted as follows:
+ *         - Byte 0: Lowest 8 bits of the year
+ *         - Byte 1: Highest 8 bits of the year
+ *         - Byte 2: Month
+ *         - Byte 3: Day
+ *         - Byte 4: Hour
+ *         - Byte 5: Minute
+ *         - Byte 6: Second
+ *         - Byte 7: Day of the week
+ *         - Byte 8: Milliseconds
+ *         - Byte 9: Adjust reason
+ */
+uint8_t get_time();
 #endif //RTC_DRIVER_H

@@ -80,24 +80,27 @@ void vBME280Task(void * pvParameters) {
 
     ESP_ERROR_CHECK(setBME280Mode(bme280, BME280_MODE_CYCLE));
 
-
-
     while (1) {
 
         do {
             vTaskDelay(pdMS_TO_TICKS(1));
         } while(isBME280Sampling(bme280));
 
-        set_current_time(2025,01,17,12,0,0,3);
-        set_current_time(2099,10,07,12,0,0);
-        set_current_time(2055,11,17,12,55,6,15);
+        set_time((uint8_t[]){ 0x07, 0xE5,  // Rok 2025 (0x07E5)
+                                 0x01,        // Miesiąc: Styczeń
+                                 0x26,        // Dzień: 26
+                                 0x12,        // Godzina: 12
+                                 0x34,        // Minuta: 34
+                                 0x56,        // Sekunda: 56
+                                 0x31 });     // Milisekundy: 789
+
+        // Pobranie aktualnego czasu
 
         vTaskDelay(30000 / portTICK_PERIOD_MS);
-        get_current_time();
-
-        set_current_time(2065,11,17,12,55,20,0);
-        vTaskDelay(30000 / portTICK_PERIOD_MS);
-        get_current_time();
+        uint8_t *payload_get_time = get_time();
+        ESP_LOGI(TAG,"Current time: %d-%d-%d %d:%d:%d\n", payload_get_time[0] | (payload_get_time[1] << 8),
+            payload_get_time[2], payload_get_time[3], payload_get_time[4],
+            payload_get_time[5], payload_get_time[6]);
 
         vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
