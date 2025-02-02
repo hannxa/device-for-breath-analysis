@@ -31,6 +31,8 @@ static void set_current_time(int year, int month, int day, int hour, int minute,
     t.tm_sec = second;
     t.tm_isdst = -1;  // Not considering daylight saving time
 
+    ESP_LOGI(TAG, "Setting time: %d-%d-%d %d:%d:%d.%d", year, month, day, hour, minute, second, milliseconds);
+
     time_t time = mktime(&t);
     if (time == -1) {
         ESP_LOGE(TAG, "Failed to convert time");
@@ -68,13 +70,13 @@ void set_time(const uint8_t payload[10]) {
     int hour = payload[4];
     int minute = payload[5];
     int second = payload[6];
-    int milliseconds = payload[7];
+    int milliseconds = payload[8];
 
     set_current_time(year, month, day, hour, minute, second, milliseconds);
 }
 
 
-uint8_t get_time(void) {
+uint8_t* get_time(void) {
     static uint8_t payload[10];
     int year, month, day, hour, minute, second, milliseconds, weekday;
     get_current_time(&year, &month, &day, &hour, &minute, &second, &milliseconds, &weekday);

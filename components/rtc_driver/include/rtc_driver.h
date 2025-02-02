@@ -67,5 +67,5 @@ void set_time();
  *         - Byte 8: Milliseconds
  *         - Byte 9: Adjust reason
  */
-uint8_t get_time();
+uint8_t* get_time();
 #endif //RTC_DRIVER_H
