@@ -86,16 +86,6 @@ void vBME280Task(void * pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(1));
         } while(isBME280Sampling(bme280));
 
-        uint8_t payload_set_time[10] = { 0xE9, 0x07, 0x02, 0x02, 0x0F, 0x20, 0x12, 0x00, 0x00, 0xE0 };
-        set_time(payload_set_time);
-
-        vTaskDelay(30000 / portTICK_PERIOD_MS);
-
-        uint8_t *payload_get_time = get_time();
-        ESP_LOGI(TAG, "Current time: %d-%d-%d %d:%d:%d\n", payload_get_time[0] | (payload_get_time[1] << 8),
-            payload_get_time[2], payload_get_time[3], payload_get_time[4],
-            payload_get_time[5], payload_get_time[6]);
-
         vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
 

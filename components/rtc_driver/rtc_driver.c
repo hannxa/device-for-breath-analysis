@@ -1,13 +1,69 @@
-#include "rtc_driver.h"
+/**
+**********************************************************************************************************************
+  * @file    rtc_driver.c
+  * @brief   This file is the RTC driver API implementation
+  * @authors hannabaranowska
+  * @date    January 06, 2025
+  **********************************************************************************************************************
+  */
+
+/* Includes -------------------------------------------------------------------------------------------------*/
 #include <esp_log.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include "rtc_driver.h"
 
+/* Private typedef ---------------------------------------------------------------------------------------------------*/
+
+/* Private define ----------------------------------------------------------------------------------------------------*/
+
+/* Private macros ----------------------------------------------------------------------------------------------------*/
+
+/* Private variables -------------------------------------------------------------------------------------------------*/
 static const char *TAG = "RTC_DRIVER";
 static rtc_time_t rtc_register;
 
+/* External variables ------------------------------------------------------------------------------------------------*/
+
+/* Private function declarations -------------------------------------------------------------------------------------*/
+/*
+ * @function timeval_to_rtc
+ *
+ * @abstract Converts struct timeval to rtc_time_t structure
+ *
+ * @param[in] tv: Input timeval structure
+ *
+ * @param[out] rtc_time: Output RTC time structure
+ *
+ * @return None
+ */
+static void timeval_to_rtc(const struct timeval *tv, rtc_time_t *rtc_time);
+
+/*
+ * @function set_current_time
+ *
+ * @abstract Sets the current RTC time
+ *
+ * @param[in] year, month, day, hour, minute, second, milliseconds: Date and time values
+ *
+ * @return None
+ */
+static void set_current_time(int year, int month, int day, int hour, int minute, int second, int milliseconds);
+
+/*
+ * @function get_current_time
+ *
+ * @abstract Retrieves the current RTC time
+ *
+ * @param[out] year, month, day, hour, minute, second, milliseconds, weekday: Date and time values
+ *
+ * @return None
+ */
+static void get_current_time(int *year, int *month, int *day, int *hour, int *minute, int *second, int *milliseconds, int *weekday);
+
+/* Private function definitions --------------------------------------------------------------------------------------*/
 static void timeval_to_rtc(const struct timeval *tv, rtc_time_t *rtc_time) {
     struct tm t;
     localtime_r(&tv->tv_sec, &t);
@@ -44,7 +100,6 @@ static void set_current_time(int year, int month, int day, int hour, int minute,
     }
 
     timeval_to_rtc(&tv, &rtc_register);
-
 }
 
 static void get_current_time(int *year, int *month, int *day, int *hour, int *minute, int *second, int *milliseconds, int *weekday) {
@@ -61,7 +116,6 @@ static void get_current_time(int *year, int *month, int *day, int *hour, int *mi
     *minute = t.tm_min;
     *second = t.tm_sec;
     *weekday = t.tm_wday;
-
 }
 void set_time(const uint8_t payload[10]) {
     int year = payload[0] | (payload[1] << 8);
