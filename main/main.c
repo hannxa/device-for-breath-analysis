@@ -21,6 +21,8 @@
 #include "bme280_driver.h"
 #include "driver/i2c_master.h"
 #include "i2c_interface.h"
+#include "esp_sntp.h"
+#include "rtc_driver.h"
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
 
@@ -78,7 +80,6 @@ void vBME280Task(void * pvParameters) {
 
     ESP_ERROR_CHECK(setBME280Mode(bme280, BME280_MODE_CYCLE));
 
-
     while (1) {
 
         do {
@@ -87,6 +88,7 @@ void vBME280Task(void * pvParameters) {
 
         vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
+
     removeBME280(bme280);
     i2c_del_master_bus(i2c_bus_handle);
 }
@@ -95,9 +97,9 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Starting app");
 
+
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
-
 }
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
