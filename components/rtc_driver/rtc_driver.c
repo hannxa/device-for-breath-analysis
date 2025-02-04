@@ -90,7 +90,7 @@ uint8_t* get_time(void) {
     payload[6] = second;
     payload[7] = weekday;
     payload[8] = milliseconds;
-    payload[9] = 0xE0;
+    payload[9] = ADJUST_REASON;
 
     return payload;
 }

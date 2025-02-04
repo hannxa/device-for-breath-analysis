@@ -1,24 +1,24 @@
 /**
- ****************************************************************************************
- *@file rtc_driver.h
- *@brief This file is the header file for RTC driver
- *@author Hanna Baranowska
- *@date January 06, 2025
- ****************************************************************************************
- */
+  **********************************************************************************************************************
+  * @file rtc_driver.h
+  * @brief This file is the header file for RTC driver
+  * @author hannabaranowska
+  * @date January 06, 2025
+  **********************************************************************************************************************
+  */
 
+/* Define to prevent recursive inclusion -----------------------------------------------------------------------------*/
 #ifndef RTC_DRIVER_H
 #define RTC_DRIVER_H
 
+#ifdef _cplusplus
+extern "C" {
+#endif
+
+/* Includes ----------------------------------------------------------------------------------------------------------*/
 #include <stdint.h>
-#include <stdbool.h>
 
-//UUID for Current Time Service and Characteristics
-#define CURRENT_TIME_SERVICE_UUID 0x1805
-#define CURRENT_TIME_CHARACTERISTIC_UUID 0x2A2B
-
-#define ADJUST_REASON 0xE0
-
+/* Types -------------------------------------------------------------------------------------------------------------*/
 typedef struct {
     uint16_t year;
     uint8_t month;
@@ -31,9 +31,18 @@ typedef struct {
     uint8_t adjust_reason;
 } rtc_time_t;
 
-/**
+/* Constants ---------------------------------------------------------------------------------------------------------*/
+#define ADJUST_REASON 0xE0
+
+/* Macros ------------------------------------------------------------------------------------------------------------*/
+
+/* Variables ---------------------------------------------------------------------------------------------------------*/
+
+/* Functions ---------------------------------------------------------------------------------------------------------*/
+/*
  * @function set_time
- * @abstract Sets the current system time based on the provided 10-byte payload.
+ *
+ * @abstract Sets the system time to the time provided in the 10-byte payload.
  *
  * @param[in] payload A 10-byte array containing the time formatted as follows:
  *            - Byte 0: Lowest 8 bits of the year
@@ -46,13 +55,13 @@ typedef struct {
  *            - Byte 7: Day of the week
  *            - Byte 8: Milliseconds
  *            - Byte 9: Adjust reason
- *
- * @return void
+ * @return None
  */
-void set_time();
+void set_time(const uint8_t payload[10]);
 
-/**
+/*
  * @function get_time
+ *
  * @abstract Retrieves the current system time and stores it in a 10-byte payload.
  *
  * @return uint8_t* Pointer to a 10-byte array containing the time formatted as follows:
@@ -68,4 +77,8 @@ void set_time();
  *         - Byte 9: Adjust reason
  */
 uint8_t* get_time();
+
 #endif //RTC_DRIVER_H
+
+/* END OF FILE -------------------------------------------------------------------------------------------------------*/
+
