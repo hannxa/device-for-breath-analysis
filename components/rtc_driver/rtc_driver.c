@@ -117,6 +117,8 @@ static void get_current_time(int *year, int *month, int *day, int *hour, int *mi
     *second = t.tm_sec;
     *weekday = t.tm_wday;
 }
+
+/* Exported function definitions -------------------------------------------------------------------------------------*/
 void set_time(const uint8_t payload[10]) {
     int year = payload[0] | (payload[1] << 8);
     int month = payload[2];
@@ -148,3 +150,5 @@ uint8_t* get_time(void) {
 
     return payload;
 }
+
+/* END OF FILE -------------------------------------------------------------------------------------------------------*/
