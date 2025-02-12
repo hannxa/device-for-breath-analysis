@@ -102,7 +102,6 @@ static void i2s_init_std_single(void) {
             .mclk = I2S_GPIO_UNUSED,
             .bclk = I2S_BCK_PIN,
             .ws = I2S_WS_PIN,
-            .dout = I2S_DATA_OUT_PIN,
             .din = I2S_DATA_IN_PIN,
             .invert_flags = {
                 .mclk_inv = false,

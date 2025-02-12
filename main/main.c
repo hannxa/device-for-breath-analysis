@@ -113,8 +113,8 @@ void app_main(void) {
     ESP_LOGI(TAG, "Creating BME280 task");
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
 
-    //ESP_LOGI(TAG, "Creating INMP441 task");
-    //xTaskCreate(vInitINMP441, "INMP441", 8192, NULL, tskIDLE_PRIORITY + 3, &xINMP441Handle);
+    ESP_LOGI(TAG, "Creating INMP441 task");
+    xTaskCreate(vInitINMP441, "INMP441", 8192, NULL, tskIDLE_PRIORITY + 3, &xINMP441Handle);
 
     ESP_LOGI(TAG, "All tasks created");
 
