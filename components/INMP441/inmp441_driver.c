@@ -41,7 +41,7 @@ esp_err_t initINMP441(void) {
     return ret;
 }
 
-esp_err_t readINMP441Data(uint8_t *data_out, size_t size)
+esp_err_t readINMP441Data(uint8_t *data_out, size_t size) //dodac odczyt z i2s
 {
     size_t bytes_read = 0;
     int16_t *temp_buffer = malloc(size * sizeof(int16_t));

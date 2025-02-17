@@ -94,18 +94,27 @@ void vBME280Task(void * pvParameters) {
 
 void vInitINMP441(void * pvParameters) {
     ESP_LOGI(TAG, "vInitINMP441 task started");
-    esp_err_t ret = initINMP441();
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "INMP441 initialized successfully in vInitINMP441");
-    } else {
-        ESP_LOGE(TAG, "Failed to initialize INMP441 in vInitINMP441");
+    esp_err_t ret;
+
+    while (1) {
+        ret = initINMP441();
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "INMP441 initialized successfully in vInitINMP441");
+            break;
+        }
+        ESP_LOGE(TAG, "Failed to initialize INMP441 in vInitINMP441, retrying...");
+        vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
+
+    vTaskDelay(3000 / portTICK_PERIOD_MS);
     vTaskDelete(NULL);
+
 }
 
 void app_main(void) {
 
     ESP_LOGI(TAG, "Starting app");
+    printf("app_main\n");
 
     ESP_LOGI(TAG, "Creating CHIPINFO task");
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
