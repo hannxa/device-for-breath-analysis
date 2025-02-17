@@ -1,13 +1,3 @@
-/**
-  **********************************************************************************************************************
-  * @file    main.c
-  * @brief   This file is the entry file for the device's firmware
-  * @authors patrykmonarcha
-  * @date Dec 1, 2024
-  **********************************************************************************************************************
-  */
-
-/* Includes -------------------------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <inttypes.h>
 #include "sdkconfig.h"
@@ -21,28 +11,14 @@
 #include "bme280_driver.h"
 #include "driver/i2c_master.h"
 #include "i2c_interface.h"
+#include "data_storage.h"
 
-/* Private typedef ---------------------------------------------------------------------------------------------------*/
-
-/* Private define ----------------------------------------------------------------------------------------------------*/
-
-/* Private macros ----------------------------------------------------------------------------------------------------*/
-
-/* Private variables -------------------------------------------------------------------------------------------------*/
 static const char * TAG = "app_main";
-
-/* External variables ------------------------------------------------------------------------------------------------*/
 TaskHandle_t xChipInfoHandle = NULL;
 TaskHandle_t xBME280Handle = NULL;
 
-/* Private function declarations -------------------------------------------------------------------------------------*/
-
-/* Private function definitions --------------------------------------------------------------------------------------*/
-
-/* Exported function definitions -------------------------------------------------------------------------------------*/
 void vChipInfoTask(void * pvParameters) {
     while(1) {
-        /* Print chip information */
         esp_chip_info_t chip_info;
         uint32_t flash_size;
         esp_chip_info(&chip_info);
@@ -70,17 +46,13 @@ void vChipInfoTask(void * pvParameters) {
 }
 
 void vBME280Task(void * pvParameters) {
-
     i2c_master_bus_handle_t i2c_bus_handle = initializeI2CBus(BME280_SDA_PIN, BME280_SCL_PIN);
     bme280_t * bme280 = NULL;
 
     ESP_ERROR_CHECK(initializeBME280Device(&bme280, i2c_bus_handle));
-
     ESP_ERROR_CHECK(setBME280Mode(bme280, BME280_MODE_CYCLE));
 
-
     while (1) {
-
         do {
             vTaskDelay(pdMS_TO_TICKS(1));
         } while(isBME280Sampling(bme280));
@@ -92,12 +64,25 @@ void vBME280Task(void * pvParameters) {
 }
 
 void app_main(void) {
-
     ESP_LOGI(TAG, "Starting app");
+
+    // Inicjalizacja pamięci dla pomiarów
+    initialize_memory();
+
+    // Wypełnianie pamięci danymi
+    for (int i = 1; i <= 200; i++) {
+        save_temperature(i * 1.1f);
+        save_pressure(i * 10.1f);
+        save_humidity(i * 5.5f);
+        save_audio(i * 2.2f);
+    }
+
+    ESP_LOGI(TAG, "Measurement data saved.");
+
+
+    // Zwolnienie pamięci po zakończeniu
+    purge_memory();
 
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
-
 }
-
-/* END OF FILE -------------------------------------------------------------------------------------------------------*/
