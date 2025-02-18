@@ -47,6 +47,7 @@ extern i2s_chan_handle_t rx_channel;
  * @return None
  */
 esp_err_t init_i2s(void);
+esp_err_t init_i2s_rx(void);
 
 #endif //I2S_DRIVER_H
 

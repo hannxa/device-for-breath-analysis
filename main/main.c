@@ -106,9 +106,18 @@ void vInitINMP441(void * pvParameters) {
         vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
 
-    vTaskDelay(3000 / portTICK_PERIOD_MS);
+    uint8_t data[1024];
+    for (int i = 0; i < sizeof(data); i++) {
+        ret = readINMP441Data(data, sizeof(data));
+        if (ret == ESP_OK) {
+            ESP_LOGI(TAG, "Data read successfully");
+            ESP_LOGI(TAG, "Data: %d", data[i]);
+        } else {
+            ESP_LOGE(TAG, "Failed to read data from INMP441");
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS); // Delay to avoid busy-waiting
+    }
     vTaskDelete(NULL);
-
 }
 
 void app_main(void) {
