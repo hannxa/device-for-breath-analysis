@@ -15,13 +15,13 @@
 #include "freertos/task.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
-#include "esp_system.h"
 #include "esp_log.h"
 #include "bme280_app.h"
 #include "bme280_driver.h"
 #include "driver/i2c_master.h"
 #include "i2c_interface.h"
-#include "esp_sntp.h"
+#include "ble_gap.h"
+#include "nvs_flash.h"
 #include "rtc_driver.h"
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
@@ -31,7 +31,7 @@
 /* Private macros ----------------------------------------------------------------------------------------------------*/
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
-static const char * TAG = "app_main";
+static const char * TAG = "MAIN";
 
 /* External variables ------------------------------------------------------------------------------------------------*/
 TaskHandle_t xChipInfoHandle = NULL;
@@ -97,9 +97,13 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Starting app");
 
+    ESP_LOGI(TAG, "Initializing BLE");
+
+    ble_init();
 
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
+
 }
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
