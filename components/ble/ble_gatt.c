@@ -16,6 +16,7 @@
 #include "services/gatt/ble_svc_gatt.h"
 #include "ble_gap.h"
 #include "ble_gatt.h"
+#include "rtc_driver.h"
 
 /* Private define ----------------------------------------------------------------------------------------------------*/
 #define DEVICE_MODEL_NUMBER "ID-169"
@@ -143,15 +144,7 @@ static uint8_t * gatt_svr_chr_audio_stream_value = NULL;
 
 
 /* External variables ------------------------------------------------------------------------------------------------*/
-uint16_t cry_notify_handle;
-uint16_t current_sound_notify_handle;
-uint16_t current_light_pattern_notify_handle;
-uint16_t current_routine_notify_handle;
-uint8_t cry_notification_enabled;
-uint8_t current_sound_notification_enabled;
-uint8_t current_light_pattern_notification_enabled;
-uint8_t current_routine_notification_enabled;
-uint8_t already_cried;
+
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
 /**
@@ -198,7 +191,6 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
             { {
                       .uuid = &gatt_svr_chr_current_time_uuid.u,
                       .access_cb = gatt_svr_chr_access_all,
-                      .val_handle = &cry_notify_handle,
                       .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
               },
               {
@@ -213,25 +205,21 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
             { {
                       .uuid = &gatt_svr_chr_model_number_uuid.u,
                       .access_cb = gatt_svr_chr_access_all,
-                      .val_handle = &cry_notify_handle,
                       .flags = BLE_GATT_CHR_F_READ,
               },
               {
                       .uuid = &gatt_svr_chr_serial_number_uuid.u,
                       .access_cb = gatt_svr_chr_access_all,
-                      .val_handle = &cry_notify_handle,
                       .flags = BLE_GATT_CHR_F_READ,
               },
               {
                       .uuid = &gatt_svr_chr_firmware_revision_uuid.u,
                       .access_cb = gatt_svr_chr_access_all,
-                      .val_handle = &cry_notify_handle,
                       .flags = BLE_GATT_CHR_F_READ,
               },
               {
                       .uuid = &gatt_svr_chr_manufacturer_name_uuid.u,
                       .access_cb = gatt_svr_chr_access_all,
-                      .val_handle = &cry_notify_handle,
                       .flags = BLE_GATT_CHR_F_READ,
               },
               {
@@ -246,13 +234,12 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
          { {
                .uuid = &gatt_svr_chr_temperature_stream_uuid.u,
                .access_cb = gatt_svr_chr_access_all,
-               .val_handle = &cry_notify_handle,
+               .val_handle = &temperature_notify_handle,
                .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
            },
            {
                .uuid = &gatt_svr_chr_temperature_memory_status_uuid.u,
                .access_cb = gatt_svr_chr_access_all,
-               .val_handle = &cry_notify_handle,
                .flags = BLE_GATT_CHR_F_INDICATE,
            },
            {
@@ -267,13 +254,12 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
         { {
                   .uuid = &gatt_svr_chr_humidity_stream_uuid.u,
                   .access_cb = gatt_svr_chr_access_all,
-                  .val_handle = &cry_notify_handle,
+                  .val_handle = &humidity_notify_handle,
                   .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
           },
           {
                   .uuid = &gatt_svr_chr_humidity_memory_status_uuid.u,
                   .access_cb = gatt_svr_chr_access_all,
-                  .val_handle = &cry_notify_handle,
                   .flags = BLE_GATT_CHR_F_INDICATE,
           },
           {
@@ -288,13 +274,12 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
         { {
                   .uuid = &gatt_svr_chr__pressure_stream_uuid.u,
                   .access_cb = gatt_svr_chr_access_all,
-                  .val_handle = &cry_notify_handle,
+                  .val_handle = &pressure_notify_handle,
                   .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
           },
           {
                   .uuid = &gatt_svr_chr_pressure_memory_status_uuid.u,
                   .access_cb = gatt_svr_chr_access_all,
-                  .val_handle = &cry_notify_handle,
                   .flags = BLE_GATT_CHR_F_INDICATE,
           },
           {
@@ -309,13 +294,12 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
         { {
                   .uuid = &gatt_svr_chr_microphone_stream_uuid.u,
                   .access_cb = gatt_svr_chr_access_all,
-                  .val_handle = &cry_notify_handle,
+                  .val_handle = &audio_notify_handle,
                   .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
           },
           {
                   .uuid = &gatt_svr_chr_microphone_memory_status_uuid.u,
                   .access_cb = gatt_svr_chr_access_all,
-                  .val_handle = &cry_notify_handle,
                   .flags = BLE_GATT_CHR_F_INDICATE,
           },
           {
@@ -446,10 +430,9 @@ static int gatt_svr_chr_access_all(uint16_t conn_handle, uint16_t attr_handle, s
 
                 ESP_LOGI(TAG, "Current Time characteristic: read requested");
 
-                // TODO: Replace with real data
-                char * tmpCurrTime = "0000000000";
+                uint8_t * currentTime = get_time();
 
-                rc = os_mbuf_append(ctxt->om, tmpCurrTime, strlen(tmpCurrTime));
+                rc = os_mbuf_append(ctxt->om, currentTime, 10);
 
                 return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 
@@ -457,9 +440,11 @@ static int gatt_svr_chr_access_all(uint16_t conn_handle, uint16_t attr_handle, s
 
                 ESP_LOGI(TAG, "Current Time characteristic: write requested");
 
-                //rc = os_mbuf_append(ctxt->om, DEVICE_MANUFACTURER_NAME, strlen(DEVICE_MANUFACTURER_NAME));
+                rc = gatt_svr_chr_write(ctxt->om, 1, sizeof write_response_table, write_response_table, NULL);
 
-                //return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
+                set_time(ctxt->om->om_data);
+
+                return rc;
             default:
                 assert(0);
                 return BLE_ATT_ERR_UNLIKELY;
@@ -531,6 +516,90 @@ int gatt_svr_init(void) {
 
     return 0;
 
+}
+
+void send_temperature_notification(void) {
+    if (temperature_notification_enabled == 1) {
+        int rc = 0;
+
+        struct os_mbuf *om;
+
+        // TODO: Replace with real data
+        char *temperatureStream = "abc";
+
+        om = ble_hs_mbuf_from_flat(temperatureStream, 3);
+        rc = ble_gattc_notify_custom(conn_handle, temperature_notify_handle, om);
+
+        if (rc != 0) {
+            ESP_LOGE(TAG, "Error while sending temperature stream notification; rc = %d", rc);
+        } else {
+            ESP_LOGI(TAG, "Sent temperature stream notification");
+        }
+
+    }
+}
+
+void send_humidity_notification(void) {
+    if (humidity_notification_enabled == 1) {
+        int rc = 0;
+
+        struct os_mbuf *om;
+
+        // TODO: Replace with real data
+        char *humidityStream = "def";
+
+        om = ble_hs_mbuf_from_flat(humidityStream, 3);
+        rc = ble_gattc_notify_custom(conn_handle, humidity_notify_handle, om);
+
+        if (rc != 0) {
+            ESP_LOGE(TAG, "Error while sending humidity stream notification; rc = %d", rc);
+        } else {
+            ESP_LOGI(TAG, "Sent humidity stream notification");
+        }
+
+    }
+}
+
+void send_pressure_notification(void) {
+    if (pressure_notification_enabled == 1) {
+        int rc = 0;
+
+        struct os_mbuf *om;
+
+        // TODO: Replace with real data
+        char *pressureStream = "ghi";
+
+        om = ble_hs_mbuf_from_flat(pressureStream, 3);
+        rc = ble_gattc_notify_custom(conn_handle, pressure_notify_handle, om);
+
+        if (rc != 0) {
+            ESP_LOGE(TAG, "Error while sending pressure stream notification; rc = %d", rc);
+        } else {
+            ESP_LOGI(TAG, "Sent pressure stream notification");
+        }
+
+    }
+}
+
+void send_audio_notification(void) {
+    if (audio_notification_enabled == 1) {
+        int rc = 0;
+
+        struct os_mbuf *om;
+
+        // TODO: Replace with real data
+        char *audioStream = "jkl";
+
+        om = ble_hs_mbuf_from_flat(audioStream, 3);
+        rc = ble_gattc_notify_custom(conn_handle, audio_notify_handle, om);
+
+        if (rc != 0) {
+            ESP_LOGE(TAG, "Error while sending audio stream notification; rc = %d", rc);
+        } else {
+            ESP_LOGI(TAG, "Sent audio stream notification");
+        }
+
+    }
 }
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
