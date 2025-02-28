@@ -5,15 +5,25 @@
 #include "freertos/task.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
-#include "esp_system.h"
 #include "esp_log.h"
 #include "bme280_app.h"
 #include "bme280_driver.h"
 #include "driver/i2c_master.h"
 #include "i2c_interface.h"
-#include "data_storage.h"
+#include "ble_gap.h"
+#include "nvs_flash.h"
+#include "rtc_driver.h"
 
-static const char * TAG = "app_main";
+/* Private typedef ---------------------------------------------------------------------------------------------------*/
+
+/* Private define ----------------------------------------------------------------------------------------------------*/
+
+/* Private macros ----------------------------------------------------------------------------------------------------*/
+
+/* Private variables -------------------------------------------------------------------------------------------------*/
+static const char * TAG = "MAIN";
+
+/* External variables ------------------------------------------------------------------------------------------------*/
 TaskHandle_t xChipInfoHandle = NULL;
 TaskHandle_t xBME280Handle = NULL;
 
@@ -59,6 +69,7 @@ void vBME280Task(void * pvParameters) {
 
         vTaskDelay(3000 / portTICK_PERIOD_MS);
     }
+
     removeBME280(bme280);
     i2c_del_master_bus(i2c_bus_handle);
 }
@@ -66,22 +77,9 @@ void vBME280Task(void * pvParameters) {
 void app_main(void) {
     ESP_LOGI(TAG, "Starting app");
 
-    // Inicjalizacja pamięci dla pomiarów
-    initialize_memory();
+    ESP_LOGI(TAG, "Initializing BLE");
 
-    // Wypełnianie pamięci danymi
-    for (int i = 1; i <= 200; i++) {
-        save_temperature(i * 1.1f);
-        save_pressure(i * 10.1f);
-        save_humidity(i * 5.5f);
-        save_audio(i * 2.2f);
-    }
-
-    ESP_LOGI(TAG, "Measurement data saved.");
-
-
-    // Zwolnienie pamięci po zakończeniu
-    purge_memory();
+    ble_init();
 
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
