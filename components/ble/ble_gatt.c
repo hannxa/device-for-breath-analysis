@@ -525,9 +525,9 @@ void send_temperature_notification(void) {
         struct os_mbuf *om;
 
         // TODO: Replace with real data
-        char *temperatureStream = "abc";
+        char *temperatureStream = "abcd";
 
-        om = ble_hs_mbuf_from_flat(temperatureStream, 3);
+        om = ble_hs_mbuf_from_flat(temperatureStream, 4);
         rc = ble_gattc_notify_custom(conn_handle, temperature_notify_handle, om);
 
         if (rc != 0) {
@@ -546,9 +546,9 @@ void send_humidity_notification(void) {
         struct os_mbuf *om;
 
         // TODO: Replace with real data
-        char *humidityStream = "def";
+        char *humidityStream = "deif";
 
-        om = ble_hs_mbuf_from_flat(humidityStream, 3);
+        om = ble_hs_mbuf_from_flat(humidityStream, 4);
         rc = ble_gattc_notify_custom(conn_handle, humidity_notify_handle, om);
 
         if (rc != 0) {
@@ -567,9 +567,9 @@ void send_pressure_notification(void) {
         struct os_mbuf *om;
 
         // TODO: Replace with real data
-        char *pressureStream = "ghi";
+        char *pressureStream = "ghii";
 
-        om = ble_hs_mbuf_from_flat(pressureStream, 3);
+        om = ble_hs_mbuf_from_flat(pressureStream, 4);
         rc = ble_gattc_notify_custom(conn_handle, pressure_notify_handle, om);
 
         if (rc != 0) {
@@ -588,9 +588,9 @@ void send_audio_notification(void) {
         struct os_mbuf *om;
 
         // TODO: Replace with real data
-        char *audioStream = "jkl";
+        char *audioStream = "jkll";
 
-        om = ble_hs_mbuf_from_flat(audioStream, 3);
+        om = ble_hs_mbuf_from_flat(audioStream, 4);
         rc = ble_gattc_notify_custom(conn_handle, audio_notify_handle, om);
 
         if (rc != 0) {
