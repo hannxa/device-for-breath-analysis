@@ -8,8 +8,12 @@
   */
 
 /* Define to prevent recursive inclusion -----------------------------------------------------------------------------*/
-#ifndef DATA_STORAGE_H
-#define DATA_STORAGE_H
+#ifndef _DATA_STORAGE_H_
+#define _DATA_STORAGE_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Includes ----------------------------------------------------------------------------------------------------------*/
 #include <stdint.h>
@@ -131,6 +135,10 @@ void save_audio(float audio);
  */
 float read_audio();
 
-#endif // DATA_STORAGE_H
+#ifdef __cplusplus
+}
+#endif
+
+#endif // _DATA_STORAGE_H_
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
