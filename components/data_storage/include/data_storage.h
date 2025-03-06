@@ -15,10 +15,10 @@
 #include <stdint.h>
 
 /* Constants ---------------------------------------------------------------------------------------------------------*/
-#define MAX_PSRAM_MEMORY (8388608 / 4) ///< Maximum available PSRAM memory divided by 4 (for float storage)
-#define MAX_MEMORY_FOR_ONE_MEASUREMENT (MAX_PSRAM_MEMORY / 4) ///< Memory allocated per sensor type
-#define DATA_POINT_SIZE sizeof(float) ///< Size of a single data point (float)
-#define MAX_DATA_POINTS (MAX_MEMORY_FOR_ONE_MEASUREMENT / DATA_POINT_SIZE) ///< Maximum number of data points that can be stored
+#define MAX_PSRAM_MEMORY (8388608 / 4) // Maximum available PSRAM memory divided by 4 (for float storage)
+#define MAX_MEMORY_FOR_ONE_MEASUREMENT (MAX_PSRAM_MEMORY / 4) // Memory allocated per sensor type
+#define DATA_POINT_SIZE sizeof(float) // Size of a single data point (float)
+#define MAX_DATA_POINTS (MAX_MEMORY_FOR_ONE_MEASUREMENT / DATA_POINT_SIZE) // Maximum number of data points that can be stored
 
 /* External Variables ------------------------------------------------------------------------------------------------*/
 extern float *temperature_data;

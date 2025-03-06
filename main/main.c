@@ -1,3 +1,13 @@
+/**
+  **********************************************************************************************************************
+  * @file    main.c
+  * @brief   This file is the entry file for the device's firmware
+  * @authors patrykmonarcha
+  * @date Dec 1, 2024
+  **********************************************************************************************************************
+  */
+
+/* Includes -------------------------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <inttypes.h>
 #include "sdkconfig.h"
@@ -27,8 +37,14 @@ static const char * TAG = "MAIN";
 TaskHandle_t xChipInfoHandle = NULL;
 TaskHandle_t xBME280Handle = NULL;
 
+/* Private function declarations -------------------------------------------------------------------------------------*/
+
+/* Private function definitions --------------------------------------------------------------------------------------*/
+
+/* Exported function definitions -------------------------------------------------------------------------------------*/
 void vChipInfoTask(void * pvParameters) {
     while(1) {
+        /* Print chip information */
         esp_chip_info_t chip_info;
         uint32_t flash_size;
         esp_chip_info(&chip_info);
@@ -56,13 +72,16 @@ void vChipInfoTask(void * pvParameters) {
 }
 
 void vBME280Task(void * pvParameters) {
+
     i2c_master_bus_handle_t i2c_bus_handle = initializeI2CBus(BME280_SDA_PIN, BME280_SCL_PIN);
     bme280_t * bme280 = NULL;
 
     ESP_ERROR_CHECK(initializeBME280Device(&bme280, i2c_bus_handle));
+
     ESP_ERROR_CHECK(setBME280Mode(bme280, BME280_MODE_CYCLE));
 
     while (1) {
+
         do {
             vTaskDelay(pdMS_TO_TICKS(1));
         } while(isBME280Sampling(bme280));
@@ -75,6 +94,7 @@ void vBME280Task(void * pvParameters) {
 }
 
 void app_main(void) {
+
     ESP_LOGI(TAG, "Starting app");
 
     ESP_LOGI(TAG, "Initializing BLE");
@@ -83,4 +103,7 @@ void app_main(void) {
 
     xTaskCreate(vChipInfoTask, "CHIPINFO", 2048, NULL, tskIDLE_PRIORITY + 1, &xChipInfoHandle);
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
+
 }
+
+/* END OF FILE -------------------------------------------------------------------------------------------------------*/

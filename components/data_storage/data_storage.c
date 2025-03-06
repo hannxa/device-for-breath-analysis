@@ -24,9 +24,7 @@
 /* Private variables -------------------------------------------------------------------------------------------------*/
 static const char *TAG = "DATA_STORAGE";
 
-static void saveFloatAsUint(float value, uint8_t table[4]);
-static float readUintAsFloat(uint8_t table[4]);
-
+/* External variables ------------------------------------------------------------------------------------------------*/
 float *temperature_data;
 float *humidity_data;
 float *pressure_data;
@@ -40,39 +38,27 @@ int temperature_data_count = 0, humidity_data_count = 0, pressure_data_count = 0
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
 /*
- * @function initialize_memory
+ * @function saveFloatAsUint
  *
- * @abstract Allocates memory for storing sensor data
+ * @abstract Converts a float value into a 4-byte array representation
+ *
+ * @param[in] value: Float value to convert
+ * @param[out] table: 4-byte array storing the converted value
  *
  * @return None
  */
-void initialize_memory() {
-    temperature_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
-    humidity_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
-    pressure_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
-    audio_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
-
-    if (!temperature_data || !humidity_data || !pressure_data || !audio_data) {
-        ESP_LOGE(TAG, "Memory allocation failed!");
-        assert(0);
-    }
-    ESP_LOGI(TAG, "Memory initialized successfully.");
-}
+static void saveFloatAsUint(float value, uint8_t table[4]);
 
 /*
- * @function purge_memory
+ * @function readUintAsFloat
  *
- * @abstract Releases allocated memory
+ * @abstract Converts a 4-byte array representation back into a float value
  *
- * @return None
+ * @param[in] table: 4-byte array containing the stored float value
+ *
+ * @return float: Converted float value
  */
-void purge_memory() {
-    free(temperature_data);
-    free(humidity_data);
-    free(pressure_data);
-    free(audio_data);
-    ESP_LOGI(TAG, "Memory purged successfully.");
-}
+static float readUintAsFloat(uint8_t table[4]);
 
 /*
  * @function save_measurement
@@ -86,16 +72,7 @@ void purge_memory() {
  *
  * @return None
  */
-static void save_measurement(int *save_index, int *data_count, float *data_array, float value) {
-    if (*data_count >= MAX_DATA_POINTS) {
-        ESP_LOGE(TAG, "Error: Memory full. Cannot overwrite unread data.");
-        return;
-    }
-    data_array[*save_index] = value;
-    *save_index = (*save_index + 1) % MAX_DATA_POINTS;
-    (*data_count)++;
-    ESP_LOGI(TAG, "Measurement saved: %.2f", value);
-}
+static void save_measurement(int *save_index, int *data_count, float *data_array, float value);
 
 /*
  * @function read_measurement
@@ -108,6 +85,21 @@ static void save_measurement(int *save_index, int *data_count, float *data_array
  *
  * @return float: Measurement value read
  */
+static float read_measurement(int *read_index, int *data_count, float *data_array);
+
+
+/* Private function definitions --------------------------------------------------------------------------------------*/
+static void save_measurement(int *save_index, int *data_count, float *data_array, float value) {
+    if (*data_count >= MAX_DATA_POINTS) {
+        ESP_LOGE(TAG, "Error: Memory full. Cannot overwrite unread data.");
+        return;
+    }
+    data_array[*save_index] = value;
+    *save_index = (*save_index + 1) % MAX_DATA_POINTS;
+    (*data_count)++;
+    ESP_LOGI(TAG, "Measurement saved: %.2f", value);
+}
+
 static float read_measurement(int *read_index, int *data_count, float *data_array) {
     if (*data_count <= 0) {
         ESP_LOGE(TAG, "Error: No data to read.");
@@ -120,7 +112,45 @@ static float read_measurement(int *read_index, int *data_count, float *data_arra
     return value;
 }
 
+static void saveFloatAsUint(float value, uint8_t table[4]) {
+    uint8_t *bytePointer = (uint8_t *)&value;
+    for (int i = 0; i < 4; i++) {
+        table[i] = bytePointer[i];
+    }
+}
+
+
+static float readUintAsFloat(uint8_t table[4]) {
+    float value;
+    uint8_t *bytePointer = (uint8_t *)&value;
+    for (int i = 0; i < 4; i++) {
+        bytePointer[i] = table[i];
+    }
+    return value;
+}
+
 /* Exported function definitions -------------------------------------------------------------------------------------*/
+void initialize_memory() {
+    temperature_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
+    humidity_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
+    pressure_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
+    audio_data = (float *)malloc(MAX_DATA_POINTS * sizeof(float));
+
+    if (!temperature_data || !humidity_data || !pressure_data || !audio_data) {
+        ESP_LOGE(TAG, "Memory allocation failed!");
+        assert(0);
+    }
+    ESP_LOGI(TAG, "Memory initialized successfully.");
+}
+
+void purge_memory() {
+    free(temperature_data);
+    free(humidity_data);
+    free(pressure_data);
+    free(audio_data);
+    ESP_LOGI(TAG, "Memory purged successfully.");
+}
+
 void save_temperature(float temperature) {
     save_measurement(&temperature_save_index, &temperature_data_count, temperature_data, temperature);
 }
@@ -151,41 +181,6 @@ void save_audio(float audio) {
 
 float read_audio() {
     return read_measurement(&audio_read_index, &audio_data_count, audio_data);
-}
-
-/*
- * @function saveFloatAsUint
- *
- * @abstract Converts a float value into a 4-byte array representation
- *
- * @param[in] value: Float value to convert
- * @param[out] table: 4-byte array storing the converted value
- *
- * @return None
- */
-static void saveFloatAsUint(float value, uint8_t table[4]) {
-    uint8_t *bytePointer = (uint8_t *)&value;
-    for (int i = 0; i < 4; i++) {
-        table[i] = bytePointer[i];
-    }
-}
-
-/*
- * @function readUintAsFloat
- *
- * @abstract Converts a 4-byte array representation back into a float value
- *
- * @param[in] table: 4-byte array containing the stored float value
- *
- * @return float: Converted float value
- */
-static float readUintAsFloat(uint8_t table[4]) {
-    float value;
-    uint8_t *bytePointer = (uint8_t *)&value;
-    for (int i = 0; i < 4; i++) {
-        bytePointer[i] = table[i];
-    }
-    return value;
 }
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
