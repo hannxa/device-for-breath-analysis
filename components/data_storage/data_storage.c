@@ -102,7 +102,7 @@ static void save_measurement(int *save_index, int *data_count, float *data_array
 
 static float read_measurement(int *read_index, int *data_count, float *data_array) {
     if (*data_count <= 0) {
-        ESP_LOGE(TAG, "Error: No data to read.");
+        //ESP_LOGE(TAG, "Error: No data to read.");
         return -1.0f;
     }
     float value = data_array[*read_index];
