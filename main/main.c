@@ -22,12 +22,16 @@
 #include "nvs_flash.h"
 #include "rtc_driver.h"
 #include "ble_gatt.h"
+#include "data_storage.h"
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
 
 /* Private define ----------------------------------------------------------------------------------------------------*/
 
 /* Private macros ----------------------------------------------------------------------------------------------------*/
+#define MEASUREMENTS_FREQUENCY 10 // [Hz]
+#define MEASUREMENTS_DELAY_MS (1000 / MEASUREMENTS_FREQUENCY) // [ms]
+#define BLE_STREAM_DELAY_MS 500 // [ms]
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 static const char * TAG = "MAIN";
@@ -37,6 +41,9 @@ TaskHandle_t xBME280Handle = NULL;
 TaskHandle_t xBLEStreamHandle = NULL;
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
+static float temperatureReading = 0;
+static float humidityReading = 0;
+static float pressureReading = 0;
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
 
@@ -53,10 +60,18 @@ void vBME280Task(void * pvParameters) {
     while (1) {
 
         do {
-            vTaskDelay(pdMS_TO_TICKS(1));
+            getBME280Temperature(bme280, &temperatureReading);
+            save_temperature(temperatureReading);
+
+            getBME280Humidity(bme280, &humidityReading);
+            save_humidity(humidityReading);
+
+            getBME280Pressure(bme280, &pressureReading);
+            save_pressure(pressureReading);
+
         } while(isBME280Sampling(bme280));
 
-        vTaskDelay(3000 / portTICK_PERIOD_MS);
+        vTaskDelay(MEASUREMENTS_DELAY_MS / portTICK_PERIOD_MS);
     }
 
     removeBME280(bme280);
@@ -70,7 +85,7 @@ void vBLEStreamTask(void * pvParameters) {
         send_humidity_notification();
         send_pressure_notification();
         send_audio_notification();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(BLE_STREAM_DELAY_MS / portTICK_PERIOD_MS);
     }
 }
 
@@ -78,14 +93,16 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Starting app");
 
-    ESP_LOGI(TAG, "Initializing BLE");
+    ESP_LOGI(TAG, "Initializing memory");
+    initialize_memory();
 
+    ESP_LOGI(TAG, "Initializing BLE");
     ble_init();
 
     ESP_LOGI(TAG, "Starting BME280 task");
-    //xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 2, &xBME280Handle);
+    xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 1, &xBME280Handle);
     ESP_LOGI(TAG, "Starting BLE stream task");
-    xTaskCreate(vBLEStreamTask, "BLESTREAM", 4096, NULL, tskIDLE_PRIORITY + 1, &xBLEStreamHandle);
+    xTaskCreate(vBLEStreamTask, "BLESTREAM", 4096, NULL, tskIDLE_PRIORITY, &xBLEStreamHandle);
 
 }
 

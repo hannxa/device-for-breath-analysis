@@ -5,4 +5,5 @@ idf_component_register(SRCS
         REQUIRES bt
                  nvs_flash
                  rtc_driver
+                 data_storage
         )

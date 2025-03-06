@@ -17,12 +17,15 @@
 #include "ble_gap.h"
 #include "ble_gatt.h"
 #include "rtc_driver.h"
+#include "data_storage.h"
+
 
 /* Private define ----------------------------------------------------------------------------------------------------*/
 #define DEVICE_MODEL_NUMBER "ID-169"
 #define DEVICE_SERIAL_NUMBER "S/N 001"
 #define DEVICE_FIRMWARE_REVISION "1.0.0"
 #define DEVICE_MANUFACTURER_NAME "Politechnika Gdańska"
+#define PAYLOAD_SIZE 200
 
 /* Private macros ----------------------------------------------------------------------------------------------------*/
 
@@ -147,6 +150,29 @@ static uint8_t * gatt_svr_chr_audio_stream_value = NULL;
 
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
+/*
+ * @function saveFloatAsUint
+ *
+ * @abstract Converts a float value into a 4-byte array representation
+ *
+ * @param[in] value: Float value to convert
+ * @param[out] table: 4-byte array storing the converted value
+ *
+ * @return None
+ */
+static void saveFloatAsUint(float value, uint8_t table[4]);
+
+/*
+ * @function readUintAsFloat
+ *
+ * @abstract Converts a 4-byte array representation back into a float value
+ *
+ * @param[in] table: 4-byte array containing the stored float value
+ *
+ * @return float: Converted float value
+ */
+static float readUintAsFloat(uint8_t table[4]);
+
 /**
  *
  * @brief This function copies the contents of an mbuf into the specified flat buffer
@@ -313,6 +339,23 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
 };
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
+static void saveFloatAsUint(float value, uint8_t table[4]) {
+    uint8_t *bytePointer = (uint8_t *)&value;
+    for (int i = 0; i < 4; i++) {
+        table[i] = bytePointer[i];
+    }
+}
+
+
+static float readUintAsFloat(uint8_t table[4]) {
+    float value;
+    uint8_t *bytePointer = (uint8_t *)&value;
+    for (int i = 0; i < 4; i++) {
+        bytePointer[i] = table[i];
+    }
+    return value;
+}
+
 static int gatt_svr_chr_write(struct os_mbuf *om, uint16_t min_len, uint16_t max_len, void *dst, uint16_t *len) {
 
     uint16_t om_len;
@@ -524,10 +567,24 @@ void send_temperature_notification(void) {
 
         struct os_mbuf *om;
 
-        // TODO: Replace with real data
-        char *temperatureStream = "abcd";
+        char * temperatureStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
+        uint8_t * temperatureStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
 
-        om = ble_hs_mbuf_from_flat(temperatureStream, 4);
+        assert(temperatureStream != NULL && "Memory allocation failed for temperatureStream");
+        assert(temperatureStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
+
+        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+            float ret = -1;
+
+            while (ret == -1) {
+                ret = read_temperature();
+            }
+
+            saveFloatAsUint(ret, temperatureStreamTable);
+            memcpy(temperatureStream + (i*4), temperatureStreamTable, 4);
+        }
+
+        om = ble_hs_mbuf_from_flat(temperatureStream, PAYLOAD_SIZE);
         rc = ble_gattc_notify_custom(conn_handle, temperature_notify_handle, om);
 
         if (rc != 0) {
@@ -536,6 +593,8 @@ void send_temperature_notification(void) {
             ESP_LOGI(TAG, "Sent temperature stream notification");
         }
 
+        free(temperatureStreamTable);
+        free(temperatureStream);
     }
 }
 
@@ -545,10 +604,24 @@ void send_humidity_notification(void) {
 
         struct os_mbuf *om;
 
-        // TODO: Replace with real data
-        char *humidityStream = "deif";
+        char * humdityStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
+        uint8_t * humidityStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
 
-        om = ble_hs_mbuf_from_flat(humidityStream, 4);
+        assert(humdityStream != NULL && "Memory allocation failed for humdityStream");
+        assert(humidityStreamTable != NULL && "Memory allocation failed for humidityStreamTable");
+
+        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+            float ret = -1;
+
+            while (ret == -1) {
+                ret = read_humidity();
+            }
+
+            saveFloatAsUint(ret, humidityStreamTable);
+            memcpy(humdityStream + (i*4), humidityStreamTable, 4);
+        }
+
+        om = ble_hs_mbuf_from_flat(humdityStream, PAYLOAD_SIZE);
         rc = ble_gattc_notify_custom(conn_handle, humidity_notify_handle, om);
 
         if (rc != 0) {
@@ -556,6 +629,9 @@ void send_humidity_notification(void) {
         } else {
             ESP_LOGI(TAG, "Sent humidity stream notification");
         }
+
+        free(humidityStreamTable);
+        free(humdityStream);
 
     }
 }
@@ -566,10 +642,24 @@ void send_pressure_notification(void) {
 
         struct os_mbuf *om;
 
-        // TODO: Replace with real data
-        char *pressureStream = "ghii";
+        char * pressureStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
+        uint8_t * pressureStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
 
-        om = ble_hs_mbuf_from_flat(pressureStream, 4);
+        assert(pressureStream != NULL && "Memory allocation failed for pressureStream");
+        assert(pressureStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
+
+        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+            float ret = -1;
+
+            while (ret == -1) {
+                ret = read_pressure();
+            }
+
+            saveFloatAsUint(ret, pressureStreamTable);
+            memcpy(pressureStream + (i*4), pressureStreamTable, 4);
+        }
+
+        om = ble_hs_mbuf_from_flat(pressureStream, PAYLOAD_SIZE);
         rc = ble_gattc_notify_custom(conn_handle, pressure_notify_handle, om);
 
         if (rc != 0) {
@@ -578,6 +668,8 @@ void send_pressure_notification(void) {
             ESP_LOGI(TAG, "Sent pressure stream notification");
         }
 
+        free(pressureStreamTable);
+        free(pressureStream);
     }
 }
 
@@ -587,10 +679,24 @@ void send_audio_notification(void) {
 
         struct os_mbuf *om;
 
-        // TODO: Replace with real data
-        char *audioStream = "jkll";
+        char * audioStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
+        uint8_t * audioStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
 
-        om = ble_hs_mbuf_from_flat(audioStream, 4);
+        assert(audioStream != NULL && "Memory allocation failed for audioStream");
+        assert(audioStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
+
+        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+            float ret = -1;
+
+            while (ret == -1) {
+                ret = read_audio();
+            }
+
+            saveFloatAsUint(ret, audioStreamTable);
+            memcpy(audioStream + (i*4), audioStreamTable, 4);
+        }
+
+        om = ble_hs_mbuf_from_flat(audioStream, PAYLOAD_SIZE);
         rc = ble_gattc_notify_custom(conn_handle, audio_notify_handle, om);
 
         if (rc != 0) {
@@ -599,6 +705,8 @@ void send_audio_notification(void) {
             ESP_LOGI(TAG, "Sent audio stream notification");
         }
 
+        free(audioStreamTable);
+        free(audioStream);
     }
 }
 
