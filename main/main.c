@@ -23,6 +23,7 @@
 #include "rtc_driver.h"
 #include "ble_gatt.h"
 #include "data_storage.h"
+#include "sfm3000_driver.h"
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
 
@@ -39,26 +40,32 @@ static const char * TAG = "MAIN";
 /* External variables ------------------------------------------------------------------------------------------------*/
 TaskHandle_t xBME280Handle = NULL;
 TaskHandle_t xBLEStreamHandle = NULL;
+TaskHandle_t xSFM3000Handle = NULL;
 
 /* Private function declarations -------------------------------------------------------------------------------------*/
 static float temperatureReading = 0;
 static float humidityReading = 0;
 static float pressureReading = 0;
+static float flowRateReading = 0;
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
 
 /* Exported function definitions -------------------------------------------------------------------------------------*/
 void vBME280Task(void * pvParameters) {
 
-    i2c_master_bus_handle_t i2c_bus_handle = initializeI2CBus(BME280_SDA_PIN, BME280_SCL_PIN);
+    //i2c_master_bus_handle_t i2c_bus_handle = initializeI2CBus(BME280_SDA_PIN, BME280_SCL_PIN);
+    i2c_master_bus_handle_t i2c_bus_handle = (i2c_master_bus_handle_t)pvParameters;
     bme280_t * bme280 = NULL;
 
-    ESP_ERROR_CHECK(initializeBME280Device(&bme280, i2c_bus_handle));
-
+    // Initialize the BME280 sensor
+    esp_err_t ret = initializeBME280Device(&bme280, i2c_bus_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize BME280 sensor");
+        vTaskDelete(NULL);  // Delete the task if initialization fails
+    }
     ESP_ERROR_CHECK(setBME280Mode(bme280, BME280_MODE_CYCLE));
 
     while (1) {
-
         do {
             getBME280Temperature(bme280, &temperatureReading);
             save_temperature(temperatureReading);
@@ -89,6 +96,57 @@ void vBLEStreamTask(void * pvParameters) {
     }
 }
 
+/**
+  * @brief Task to read data from the SFM3000 sensor.
+  */
+void vSFM3000Task(void * pvParameters) {
+    /*i2c_master_bus_handle_t i2c_bus_handle = (i2c_master_bus_handle_t)pvParameters;
+
+    // Initialize the SFM3000 sensor
+    esp_err_t ret = sfm3000_init(i2c_bus_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize SFM3000 sensor");
+        vTaskDelete(NULL);  // Delete the task if initialization fails
+    }
+
+    while (1) {
+        // Read the flow rate from the SFM3000 sensor
+        ret = sfm3000_read_flow_rate(&flowRateReading);
+        if (ret == ESP_OK) {
+            printf("Flow rate: %.2f slm\n", flowRateReading);
+            ESP_LOGI(TAG, "Flow rate: %.2f slm", flowRateReading);
+        } else {
+            ESP_LOGE(TAG, "Failed to read flow rate from SFM3000");
+        }
+
+        vTaskDelay(MEASUREMENTS_DELAY_MS / portTICK_PERIOD_MS);
+    }*/
+
+    i2c_master_bus_handle_t i2c_bus_handle = (i2c_master_bus_handle_t)pvParameters;
+    sfm3000_dev_t * sfm3000 = NULL;
+
+    // Initialize the SFM3000 sensor
+    esp_err_t ret = initializeSFM3000Device(&sfm3000, i2c_bus_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize SFM3000 sensor");
+        vTaskDelete(NULL);  // Delete the task if initialization fails
+    }
+
+    while (1) {
+        // Read the flow rate from the SFM3000 sensor
+        ret = sfm3000_read_flow_rate(&flowRateReading);
+        if (ret == ESP_OK) {
+            printf("Flow rate: %.2f slm\n", flowRateReading);
+            ESP_LOGI(TAG, "Flow rate: %.2f slm", flowRateReading);
+        } else {
+            ESP_LOGE(TAG, "Failed to read flow rate from SFM3000");
+        }
+
+        vTaskDelay(MEASUREMENTS_DELAY_MS / portTICK_PERIOD_MS);
+    }
+
+}
+
 void app_main(void) {
 
     ESP_LOGI(TAG, "Starting app");
@@ -99,11 +157,23 @@ void app_main(void) {
     ESP_LOGI(TAG, "Initializing BLE");
     ble_init();
 
+    // Initialize I2C bus
+    i2c_master_bus_handle_t i2c_bus_handle = initializeI2CBus(I2C_MASTER_SDA_IO, I2C_MASTER_SCL_IO);
+    if (i2c_bus_handle == NULL) {
+        ESP_LOGE(TAG, "Failed to initialize I2C bus");
+        return;
+    }
+    ESP_LOGI(TAG, "I2C bus initialized");
+
     ESP_LOGI(TAG, "Starting BME280 task");
-    xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 1, &xBME280Handle);
+    xTaskCreate(vBME280Task, "BME280", 8192, i2c_bus_handle, tskIDLE_PRIORITY + 1, &xBME280Handle);
+
     ESP_LOGI(TAG, "Starting BLE stream task");
     xTaskCreate(vBLEStreamTask, "BLESTREAM", 4096, NULL, tskIDLE_PRIORITY, &xBLEStreamHandle);
 
+    // Start the SFM3000 task
+    ESP_LOGI(TAG, "Starting SFM3000 task");
+    //xTaskCreate(vSFM3000Task, "SFM3000", 4096, i2c_bus_handle, tskIDLE_PRIORITY + 2, &xSFM3000Handle);
 }
 
 /* END OF FILE -------------------------------------------------------------------------------------------------------*/
