@@ -22,9 +22,6 @@ HUMIDITY_STREAM_CHAR_UUID = "97DCE133-0916-4D5C-A1E3-217B10B37D58"
 PRESSURE_SERVICE_UUID = "8DCF22A9-F7EF-48CD-ADFC-ACB21BF61B4B"
 PRESSURE_STREAM_CHAR_UUID = "55FCD9B7-63B3-4820-A26C-73A8A7BB8D6F"
 
-MICROPHONE_SERVICE_UUID = "FA124461-66EA-4E1B-B1E4-E58CB6DEC6BE"
-MICROPHONE_STREAM_CHAR_UUID = "B0CE3C07-AA05-4C8C-8E89-6F62ECD7DAC2"
-
 DEVICE_NAME = "ID-169"
 
 class SensorGraphApp(QtWidgets.QMainWindow):
@@ -64,22 +61,19 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         self.temperature_graph = self.create_graph("Temperatura")
         self.humidity_graph = self.create_graph("Wilgotność")
         self.pressure_graph = self.create_graph("Ciśnienie")
-        self.microphone_graph = self.create_graph("Mikrofon")
 
         self.tabs.addTab(self.temperature_graph, "Temperatura")
         self.tabs.addTab(self.humidity_graph, "Wilgotność")
         self.tabs.addTab(self.pressure_graph, "Ciśnienie")
-        self.tabs.addTab(self.microphone_graph, "Mikrofon")
 
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.update_graphs)
 
         self.ble_client = None
         self.ble_data = {
-            "temperature": None,
-            "humidity": None,
-            "pressure": None,
-            "microphone": None,
+            "temperature": [],
+            "humidity": [],
+            "pressure": [],
         }
 
         self.bt_timer = QtCore.QTimer()
@@ -131,11 +125,6 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                     await self.ble_client.connect()
                     print("Połączono z urządzeniem Bluetooth.")
                     await self.ble_client.write_gatt_char(CURRENT_TIME_CHAR_UUID, self.get_current_time_as_bytearray(), response=False)
-                    await self.ble_client.start_notify(TEMPERATURE_STREAM_CHAR_UUID, self.handle_temperature_data)
-                    await self.ble_client.start_notify(HUMIDITY_STREAM_CHAR_UUID, self.handle_humidity_data)
-                    await self.ble_client.start_notify(PRESSURE_STREAM_CHAR_UUID, self.handle_pressure_data)
-                    await self.ble_client.start_notify(MICROPHONE_STREAM_CHAR_UUID, self.handle_microphone_data)
-
                     self.connection_label.setText("Połączono z urządzeniem Bluetooth.")
                     self.show_graphs_button.setVisible(True)  # Pokazujemy przycisk
                     break
@@ -148,10 +137,17 @@ class SensorGraphApp(QtWidgets.QMainWindow):
     async def show_graphs(self):
         if self.ble_client and self.show_graphs_button:
             await self.read_rtc_time()
+            await self.start_notifications()
             self.tabs.setVisible(True)
             self.show_graphs_button.setVisible(False)
             self.save_button.setVisible(True)
-            self.timer.start(1000)
+            self.timer.start(100)
+
+    async def start_notifications(self):
+        if self.ble_client and self.ble_client.is_connected:
+            await self.ble_client.start_notify(TEMPERATURE_STREAM_CHAR_UUID, self.handle_temperature_data)
+            await self.ble_client.start_notify(HUMIDITY_STREAM_CHAR_UUID, self.handle_humidity_data)
+            await self.ble_client.start_notify(PRESSURE_STREAM_CHAR_UUID, self.handle_pressure_data)
 
     async def read_rtc_time(self):
         if self.ble_client and self.ble_client.is_connected:
@@ -177,93 +173,105 @@ class SensorGraphApp(QtWidgets.QMainWindow):
             rtc_label.setText(f"Czas RTC: {time_str}")
 
     def handle_temperature_data(self, sender, data):
-        #print(f"Temepratura: odebrane dane{data}, długosc: {len(data)}")
+        print("handle_temperature_data called")
         temperature = []
-        if (len(data) % 4 == 0):
+        if len(data) % 4 == 0:
             try:
                 for i in range(0, len(data), 4):
-                    float_value = np.frombuffer(data[i:i+4], dtype = np.float32[0])
+                    float_value = np.frombuffer(data[i:i+4], dtype=np.float32)[0]
                     temperature.append(float_value)
             except Exception as e:
                 int_values = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
                 temperature.append(int_values)
         else:
             print("nieprawidłowa dlugosc data z temperatury")
-        self.ble_data["temperature"] = temperature
+
+        self.ble_data["temperature"].append(temperature)  # Append the new data as a new entry
+        print(f"Temperature data: {temperature}")
 
     def handle_humidity_data(self, sender, data):
-        #print(f"Wilgotnosc: odebrane dane{data}, długosc: {len(data)}")
+        print("handle_humidity_data called")
         humidity = []
-        if (len(data) % 4 == 0):
+        if len(data) % 4 == 0:
             for i in range(0, len(data), 4):
                 try:
-                    float_value = np.frombuffer(data[i:i+4], dtype = np.float32[0])
+                    float_value = np.frombuffer(data[i:i+4], dtype=np.float32)[0]
                     humidity.append(float_value)
                 except Exception as e:
                     int_value = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
                     humidity.append(int_value)
         else:
             print("nieprawidłowa dlugosc data z wilgotnosci")
-        self.ble_data["humidity"] = humidity
+
+        self.ble_data["humidity"].append(humidity)  # Append the new data as a new entry
+        print(f"Humidity data: {humidity}")
 
     def handle_pressure_data(self, sender, data):
-        #print(f"Cisnienie: odebrane dane{data}, długosc: {len(data)}")
+        print("handle_pressure_data called")
         pressure = []
-        if (len(data) % 4 == 0):
+        if len(data) % 4 == 0:
             try:
                 for i in range(0, len(data), 4):
-                    float_value = np.frombuffer(data[i:i+4], dtype = np.float32[0])
+                    float_value = np.frombuffer(data[i:i+4], dtype=np.float32)[0]
                     pressure.append(float_value)
             except Exception as e:
                 int_value = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
                 pressure.append(float(int_value))
         else:
             print("otrzymano nieprawidlowe dane")
-        self.ble_data["pressure"] = pressure
 
-    def handle_microphone_data(self, sender, data):
-        #print(f"mikrofon: odebrane dane{data}, długosc: {len(data)}")
-        microphone = []
+        self.ble_data["pressure"].append(pressure)  # Append the new data as a new entry
+        print(f"Pressure data: {pressure}")
 
-        if(len(data) % 4 == 0):
-            for i in range(0, len(data), 4):
-                try:
-                    float_value = np.frombuffer(data[i:i+4], dtype = np.float32[0])
-                    microphone.append(float_value)
-                except Exception as e:
-                    int_value = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
-                    microphone.append(float(int_value))
-        else:
-            print("nieprawidłowa dlugosc data z mikrofonu")
-        self.ble_data["microphone"] = microphone
     def update_graphs(self):
-        if all(value is not None for value in self.ble_data.values()):
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.data_log.append([timestamp, [
-                self.ble_data["temperature"],
-                self.ble_data["humidity"],
-                self.ble_data["pressure"],
-                self.ble_data["microphone"]
-            ]])
+        print("update_graphs called")
 
-            self.update_graph(self.temperature_graph, self.ble_data["temperature"])
-            self.update_graph(self.humidity_graph, self.ble_data["humidity"])
-            self.update_graph(self.pressure_graph, self.ble_data["pressure"])
-            self.update_graph(self.microphone_graph, self.ble_data["microphone"])
+        # Pobierz nowe dane z urządzenia BLE
+        asyncio.create_task(self.read_rtc_time())
+
+        print("Temperature: ", self.ble_data["temperature"])
+        print("Humidity: ", self.ble_data["humidity"])
+        print("Pressure: ", self.ble_data["pressure"])
+
+        if (self.ble_data["temperature"] and
+                self.ble_data["humidity"] and
+                self.ble_data["pressure"]):
+
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.data_log.append({
+                "timestamp": timestamp,
+                "temperature": self.ble_data["temperature"][-1] if self.ble_data["temperature"] else [],
+                "humidity": self.ble_data["humidity"][-1] if self.ble_data["humidity"] else [],
+                "pressure": self.ble_data["pressure"][-1] if self.ble_data["pressure"] else []
+            })
+
+            if self.ble_data["temperature"]:
+                self.update_graph(self.temperature_graph, self.ble_data["temperature"][-1])
+            if self.ble_data["humidity"]:
+                self.update_graph(self.humidity_graph, self.ble_data["humidity"][-1])
+            if self.ble_data["pressure"]:
+                self.update_graph(self.pressure_graph, self.ble_data["pressure"][-1])
+
+        # Restart the timer to continuously update the graphs
+        self.timer.start(100)
 
     def update_graph(self, graph_widget, values):
+        print(f"update_graph called for {graph_widget}")
+        if values is None:
+            print("No data to update the graph.")
+            return
+
         canvas = graph_widget.layout().itemAt(1).widget()
         ax = canvas.figure.axes[0]
         line = ax.lines[0]
         y_data = line.get_ydata()
 
-        if len(values) > len(y_data):
-            values = values[-len(y_data):]
+        # Append new values to the existing y_data
+        new_y_data = np.append(y_data, values)
+        if len(new_y_data) > len(self.x_data):
+            new_y_data = new_y_data[-len(self.x_data):]
 
-        y_data = np.roll(y_data, -len(values))
-        y_data[-len(values):] = values
-
-        line.set_ydata(y_data)
+        line.set_ydata(new_y_data)
         ax.relim()
         ax.autoscale_view()
         canvas.draw()
@@ -300,22 +308,36 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         return time_data
 
     def save_to_csv(self):
-        filename=f"sensor_data_{datetime.now().strftime("%Y_%m_%d_%H_%M_%S")}.csv"
+        filename=f"C:\\Users\\Asus\\Desktop\\Ukady_Elektroniczne\\sensor_data_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv"
 
         with open(filename, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["Temperature (°C)", "Humidity (%)", "Pressure", "Microphone"])
+            writer.writerow(["Temperature (°C)", "Humidity (%)", "Pressure"])
 
-            for _, values in self.data_log:
-                flattened_values = []
-                for sublist in values:
-                    if isinstance(sublist, list):
-                        flattened_values.extend(sublist)
-                    else:
-                        flattened_values.append(sublist)
-                writer.writerow(flattened_values)
+            print(len(self.data_log))
+            print("Data log:", self.data_log)
+
+            for entry in self.data_log:
+                temperatures = entry["temperature"] or []
+                humidities = entry["humidity"] or []
+                pressures = entry["pressure"] or []
+
+                max_length = max(len(temperatures), len(humidities), len(pressures))
+                for i in range(max_length):
+                    row = [
+                        temperatures[i] if i < len(temperatures) else "",
+                        humidities[i] if i < len(humidities) else "",
+                        pressures[i] if i < len(pressures) else ""
+                    ]
+                    writer.writerow(row)
+                    print("Row:", row)
 
         print(f"Dane zapisane do {filename}")
+
+    def closeEvent(self, event):
+        if self.ble_client and self.ble_client.is_connected:
+            asyncio.create_task(self.ble_client.disconnect())
+        event.accept()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
