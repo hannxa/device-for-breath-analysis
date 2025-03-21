@@ -31,7 +31,7 @@
 /* Private macros ----------------------------------------------------------------------------------------------------*/
 #define MEASUREMENTS_FREQUENCY 10 // [Hz]
 #define MEASUREMENTS_DELAY_MS (1000 / MEASUREMENTS_FREQUENCY) // [ms]
-#define BLE_STREAM_DELAY_MS 100 // [ms]
+#define BLE_STREAM_DELAY_MS 500 // [ms]
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 static const char * TAG = "MAIN";
@@ -59,17 +59,14 @@ void vBME280Task(void * pvParameters) {
 
     while (1) {
 
-        do {
-            getBME280Temperature(bme280, &temperatureReading);
-            save_temperature(temperatureReading);
+        getBME280Temperature(bme280, &temperatureReading);
+        save_temperature(temperatureReading);
 
-            getBME280Humidity(bme280, &humidityReading);
-            save_humidity(humidityReading);
+        getBME280Humidity(bme280, &humidityReading);
+        save_humidity(humidityReading);
 
-            getBME280Pressure(bme280, &pressureReading);
-            save_pressure(pressureReading);
-
-        } while(isBME280Sampling(bme280));
+        getBME280Pressure(bme280, &pressureReading);
+        save_pressure(pressureReading);
 
         vTaskDelay(MEASUREMENTS_DELAY_MS / portTICK_PERIOD_MS);
     }
