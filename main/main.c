@@ -31,7 +31,7 @@
 /* Private macros ----------------------------------------------------------------------------------------------------*/
 #define MEASUREMENTS_FREQUENCY 10 // [Hz]
 #define MEASUREMENTS_DELAY_MS (1000 / MEASUREMENTS_FREQUENCY) // [ms]
-#define BLE_STREAM_DELAY_MS 500 // [ms]
+#define BLE_STREAM_DELAY_MS 100 // [ms]
 
 /* Private variables -------------------------------------------------------------------------------------------------*/
 static const char * TAG = "MAIN";
