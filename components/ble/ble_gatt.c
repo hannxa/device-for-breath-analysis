@@ -25,7 +25,8 @@
 #define DEVICE_SERIAL_NUMBER "S/N 001"
 #define DEVICE_FIRMWARE_REVISION "1.0.0"
 #define DEVICE_MANUFACTURER_NAME "Politechnika Gdańska"
-#define PAYLOAD_SIZE 200
+#define PAYLOAD_SIZE 500
+#define FLOAT_LENGTH 4
 
 /* Private macros ----------------------------------------------------------------------------------------------------*/
 
@@ -156,6 +157,7 @@ static uint8_t * gatt_svr_chr_audio_stream_value = NULL;
  * @abstract Converts a float value into a 4-byte array representation
  *
  * @param[in] value: Float value to convert
+ *
  * @param[out] table: 4-byte array storing the converted value
  *
  * @return None
@@ -568,12 +570,12 @@ void send_temperature_notification(void) {
         struct os_mbuf *om;
 
         char * temperatureStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * temperatureStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * temperatureStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(temperatureStream != NULL && "Memory allocation failed for temperatureStream");
         assert(temperatureStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -581,7 +583,7 @@ void send_temperature_notification(void) {
             }
 
             saveFloatAsUint(ret, temperatureStreamTable);
-            memcpy(temperatureStream + (i*4), temperatureStreamTable, 4);
+            memcpy(temperatureStream + (i*FLOAT_LENGTH), temperatureStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(temperatureStream, PAYLOAD_SIZE);
@@ -605,12 +607,12 @@ void send_humidity_notification(void) {
         struct os_mbuf *om;
 
         char * humdityStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * humidityStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * humidityStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(humdityStream != NULL && "Memory allocation failed for humdityStream");
         assert(humidityStreamTable != NULL && "Memory allocation failed for humidityStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -618,7 +620,7 @@ void send_humidity_notification(void) {
             }
 
             saveFloatAsUint(ret, humidityStreamTable);
-            memcpy(humdityStream + (i*4), humidityStreamTable, 4);
+            memcpy(humdityStream + (i*FLOAT_LENGTH), humidityStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(humdityStream, PAYLOAD_SIZE);
@@ -643,12 +645,12 @@ void send_pressure_notification(void) {
         struct os_mbuf *om;
 
         char * pressureStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * pressureStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * pressureStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(pressureStream != NULL && "Memory allocation failed for pressureStream");
         assert(pressureStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -656,7 +658,7 @@ void send_pressure_notification(void) {
             }
 
             saveFloatAsUint(ret, pressureStreamTable);
-            memcpy(pressureStream + (i*4), pressureStreamTable, 4);
+            memcpy(pressureStream + (i*FLOAT_LENGTH), pressureStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(pressureStream, PAYLOAD_SIZE);
@@ -680,12 +682,12 @@ void send_audio_notification(void) {
         struct os_mbuf *om;
 
         char * audioStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * audioStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * audioStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(audioStream != NULL && "Memory allocation failed for audioStream");
         assert(audioStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -693,7 +695,7 @@ void send_audio_notification(void) {
             }
 
             saveFloatAsUint(ret, audioStreamTable);
-            memcpy(audioStream + (i*4), audioStreamTable, 4);
+            memcpy(audioStream + (i*FLOAT_LENGTH), audioStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(audioStream, PAYLOAD_SIZE);

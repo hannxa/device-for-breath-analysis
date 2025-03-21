@@ -101,6 +101,7 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Starting BME280 task");
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 1, &xBME280Handle);
+
     ESP_LOGI(TAG, "Starting BLE stream task");
     xTaskCreate(vBLEStreamTask, "BLESTREAM", 4096, NULL, tskIDLE_PRIORITY, &xBLEStreamHandle);
 
