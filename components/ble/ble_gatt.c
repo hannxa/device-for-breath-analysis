@@ -606,10 +606,10 @@ void send_humidity_notification(void) {
 
         struct os_mbuf *om;
 
-        char * humdityStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
+        char * humidityStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
         uint8_t * humidityStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
-        assert(humdityStream != NULL && "Memory allocation failed for humdityStream");
+        assert(humidityStream != NULL && "Memory allocation failed for humdityStream");
         assert(humidityStreamTable != NULL && "Memory allocation failed for humidityStreamTable");
 
         for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
@@ -620,10 +620,10 @@ void send_humidity_notification(void) {
             }
 
             saveFloatAsUint(ret, humidityStreamTable);
-            memcpy(humdityStream + (i*FLOAT_LENGTH), humidityStreamTable, FLOAT_LENGTH);
+            memcpy(humidityStream + (i*FLOAT_LENGTH), humidityStreamTable, FLOAT_LENGTH);
         }
 
-        om = ble_hs_mbuf_from_flat(humdityStream, PAYLOAD_SIZE);
+        om = ble_hs_mbuf_from_flat(humidityStream, PAYLOAD_SIZE);
         rc = ble_gattc_notify_custom(conn_handle, humidity_notify_handle, om);
 
         if (rc != 0) {
@@ -633,7 +633,7 @@ void send_humidity_notification(void) {
         }
 
         free(humidityStreamTable);
-        free(humdityStream);
+        free(humidityStream);
 
     }
 }
