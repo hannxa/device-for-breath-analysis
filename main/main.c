@@ -59,17 +59,14 @@ void vBME280Task(void * pvParameters) {
 
     while (1) {
 
-        do {
-            getBME280Temperature(bme280, &temperatureReading);
-            save_temperature(temperatureReading);
+        getBME280Temperature(bme280, &temperatureReading);
+        save_temperature(temperatureReading);
 
-            getBME280Humidity(bme280, &humidityReading);
-            save_humidity(humidityReading);
+        getBME280Humidity(bme280, &humidityReading);
+        save_humidity(humidityReading);
 
-            getBME280Pressure(bme280, &pressureReading);
-            save_pressure(pressureReading);
-
-        } while(isBME280Sampling(bme280));
+        getBME280Pressure(bme280, &pressureReading);
+        save_pressure(pressureReading);
 
         vTaskDelay(MEASUREMENTS_DELAY_MS / portTICK_PERIOD_MS);
     }
@@ -101,6 +98,7 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "Starting BME280 task");
     xTaskCreate(vBME280Task, "BME280", 8192, NULL, tskIDLE_PRIORITY + 1, &xBME280Handle);
+
     ESP_LOGI(TAG, "Starting BLE stream task");
     xTaskCreate(vBLEStreamTask, "BLESTREAM", 4096, NULL, tskIDLE_PRIORITY, &xBLEStreamHandle);
 
