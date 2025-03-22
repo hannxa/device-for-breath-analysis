@@ -25,7 +25,7 @@
 #define DEVICE_SERIAL_NUMBER "S/N 001"
 #define DEVICE_FIRMWARE_REVISION "1.0.0"
 #define DEVICE_MANUFACTURER_NAME "Politechnika Gdańska"
-#define PAYLOAD_SIZE 500
+#define PAYLOAD_SIZE 20
 #define FLOAT_LENGTH 4
 
 /* Private macros ----------------------------------------------------------------------------------------------------*/
