@@ -22,6 +22,7 @@
 #include "nvs_flash.h"
 #include "rtc_driver.h"
 #include "ble_gatt.h"
+#include "ble_gap.h"
 #include "data_storage.h"
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
@@ -59,14 +60,16 @@ void vBME280Task(void * pvParameters) {
 
     while (1) {
 
-        getBME280Temperature(bme280, &temperatureReading);
-        save_temperature(temperatureReading);
+        if (temperature_notification_enabled == 1) {
+            getBME280Temperature(bme280, &temperatureReading);
+            save_temperature(temperatureReading);
 
-        getBME280Humidity(bme280, &humidityReading);
-        save_humidity(humidityReading);
+            getBME280Humidity(bme280, &humidityReading);
+            save_humidity(humidityReading);
 
-        getBME280Pressure(bme280, &pressureReading);
-        save_pressure(pressureReading);
+            getBME280Pressure(bme280, &pressureReading);
+            save_pressure(pressureReading);
+        }
 
         vTaskDelay(MEASUREMENTS_DELAY_MS / portTICK_PERIOD_MS);
     }
