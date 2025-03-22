@@ -26,6 +26,7 @@
 #define DEVICE_FIRMWARE_REVISION "1.0.0"
 #define DEVICE_MANUFACTURER_NAME "Politechnika Gdańska"
 #define PAYLOAD_SIZE 20
+#define FLOAT_LENGTH 4
 
 /* Private macros ----------------------------------------------------------------------------------------------------*/
 
@@ -89,49 +90,49 @@ static const ble_uuid128_t gatt_svr_chr_custom_humidity_service_uuid =
 /** @brief BLE Humidity Stream Characteristic UUID */
 static const ble_uuid128_t gatt_svr_chr_humidity_stream_uuid =
         BLE_UUID128_INIT(0x58, 0x7D, 0xB3, 0x10, 0x7B, 0x21, 0xE3, 0xA1,
-                         0x5C, 0x4D, 0x16, 0x09, 0x33, 0xE1, 0xDC, 0x97);
+                        0x5C, 0x4D, 0x16, 0x09, 0x33, 0xE1, 0xDC, 0x97);
 
 // 1C 8F 7E C6 26 19 47 BF B0 1F 61 21 C1 D1 FF 65
 /** @brief BLE Memory Status Characteristic UUID */
 static const ble_uuid128_t gatt_svr_chr_humidity_memory_status_uuid =
         BLE_UUID128_INIT(0x65, 0xFF, 0xD1, 0xC1, 0x21, 0x61, 0x1F, 0xB0,
-                         0xBF, 0x47, 0x19, 0x26, 0xC6, 0x7E, 0x8F, 0x1C);
+                        0xBF, 0x47, 0x19, 0x26, 0xC6, 0x7E, 0x8F, 0x1C);
 
 // 8D CF 22 A9 F7 EF 48 CD AD FC AC B2 1B F6 1B 4B
 /** @brief BLE Custom Pressure Service UUID */
 static const ble_uuid128_t gatt_svr_chr_custom_pressure_service_uuid =
         BLE_UUID128_INIT(0x4B, 0x1B, 0xF6, 0x1B, 0xB2, 0xAC, 0xFC, 0xAD,
-                         0xCD, 0x48, 0xEF, 0xF7, 0xA9, 0x22, 0xCF, 0x8D);
+                        0xCD, 0x48, 0xEF, 0xF7, 0xA9, 0x22, 0xCF, 0x8D);
 
 // 55 FC D9 B7 63 B3 48 20 A2 6C 73 A8 A7 BB 8D 6F
 /** @brief BLE Pressure Stream Characteristic UUID */
 static const ble_uuid128_t gatt_svr_chr__pressure_stream_uuid =
         BLE_UUID128_INIT(0x6F, 0x8D, 0xBB, 0xA7, 0xA8, 0x73, 0x6C, 0xA2,
-                         0x20, 0x48, 0xB3, 0x63, 0xB7, 0xD9, 0xFC, 0x55);
+                        0x20, 0x48, 0xB3, 0x63, 0xB7, 0xD9, 0xFC, 0x55);
 
 // A9 56 BD 16 50 28 48 D1 93 FE D4 42 E7 68 42 FF
 /** @brief BLE Memory Status Characteristic UUID */
 static const ble_uuid128_t gatt_svr_chr_pressure_memory_status_uuid =
         BLE_UUID128_INIT(0xFF, 0x42, 0x68, 0xE7, 0x42, 0xD4, 0xFE, 0x93,
-                         0xD1, 0x48, 0x28, 0x50, 0x16, 0xBD, 0x56, 0xA9);
+                        0xD1, 0x48, 0x28, 0x50, 0x16, 0xBD, 0x56, 0xA9);
 
 // FA 12 44 61 66 EA 4E 1B B1 E4 E5 8C B6 DE C6 BE
 /** @brief BLE Custom Microphone Service UUID */
 static const ble_uuid128_t gatt_svr_chr_custom_microphone_service_uuid =
         BLE_UUID128_INIT(0xBE, 0xC6, 0xDE, 0xB6, 0x8C, 0xE5, 0xE4, 0xB1,
-                         0x1B, 0x4E, 0xEA, 0x66, 0x61, 0x44, 0x12, 0xFA);
+                        0x1B, 0x4E, 0xEA, 0x66, 0x61, 0x44, 0x12, 0xFA);
 
 // B0 CE 3C 07 AA 05 4C 8C 8E 89 6F 62 EC D7 DA C2
 /** @brief BLE Microphone Stream Characteristic UUID */
 static const ble_uuid128_t gatt_svr_chr_microphone_stream_uuid =
         BLE_UUID128_INIT(0xC2, 0xDA, 0xD7, 0xEC, 0x62, 0x6F, 0x89, 0x8E,
-                         0x8C, 0x4C, 0x05, 0xAA, 0x07, 0x3C, 0xCE, 0xB0);
+                        0x8C, 0x4C, 0x05, 0xAA, 0x07, 0x3C, 0xCE, 0xB0);
 
 // 7D E1 41 6F CF 11 4E F2 86 C8 0F 40 AE B6 6A AE
 /** @brief BLE Memory Status Characteristic UUID */
 static const ble_uuid128_t gatt_svr_chr_microphone_memory_status_uuid =
         BLE_UUID128_INIT(0xAE, 0x6A, 0xB6, 0xAE, 0x40, 0x0F, 0xC8, 0x86,
-                         0xF2, 0x4E, 0x11, 0xCF, 0x6F, 0x41, 0xE1, 0x7D);
+                        0xF2, 0x4E, 0x11, 0xCF, 0x6F, 0x41, 0xE1, 0x7D);
 
 /** @abstract Holding Temperature Stream characteristic value */
 static uint8_t * gatt_svr_chr_temperature_stream_value = NULL;
@@ -156,6 +157,7 @@ static uint8_t * gatt_svr_chr_audio_stream_value = NULL;
  * @abstract Converts a float value into a 4-byte array representation
  *
  * @param[in] value: Float value to convert
+ *
  * @param[out] table: 4-byte array storing the converted value
  *
  * @return None
@@ -210,132 +212,132 @@ static int gatt_svr_chr_access_all(uint16_t conn_handle, uint16_t attr_handle, s
 
 /* Private typedef ---------------------------------------------------------------------------------------------------*/
 static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
-        {
-                .type = BLE_GATT_SVC_TYPE_PRIMARY,
-                .uuid = &gatt_svr_svc_current_time_service_uuid.u,
-                .characteristics = (struct ble_gatt_chr_def[])
-                        { {
-                                  .uuid = &gatt_svr_chr_current_time_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
-                          },
-                          {
-                                  0, /* No more characteristics in this service. */
-                          }
-                        },
+    {
+    .type = BLE_GATT_SVC_TYPE_PRIMARY,
+    .uuid = &gatt_svr_svc_current_time_service_uuid.u,
+    .characteristics = (struct ble_gatt_chr_def[])
+            { {
+                      .uuid = &gatt_svr_chr_current_time_uuid.u,
+                      .access_cb = gatt_svr_chr_access_all,
+                      .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
+              },
+              {
+                      0, /* No more characteristics in this service. */
+              }
+            },
+    },
+    {
+    .type = BLE_GATT_SVC_TYPE_PRIMARY,
+    .uuid = &gatt_svr_svc_device_information_service_uuid.u,
+    .characteristics = (struct ble_gatt_chr_def[])
+            { {
+                      .uuid = &gatt_svr_chr_model_number_uuid.u,
+                      .access_cb = gatt_svr_chr_access_all,
+                      .flags = BLE_GATT_CHR_F_READ,
+              },
+              {
+                      .uuid = &gatt_svr_chr_serial_number_uuid.u,
+                      .access_cb = gatt_svr_chr_access_all,
+                      .flags = BLE_GATT_CHR_F_READ,
+              },
+              {
+                      .uuid = &gatt_svr_chr_firmware_revision_uuid.u,
+                      .access_cb = gatt_svr_chr_access_all,
+                      .flags = BLE_GATT_CHR_F_READ,
+              },
+              {
+                      .uuid = &gatt_svr_chr_manufacturer_name_uuid.u,
+                      .access_cb = gatt_svr_chr_access_all,
+                      .flags = BLE_GATT_CHR_F_READ,
+              },
+              {
+                      0, /* No more characteristics in this service. */
+              }
+            },
+    },
+    {
+     .type = BLE_GATT_SVC_TYPE_PRIMARY,
+     .uuid = &gatt_svr_svc_custom_temperature_service_uuid.u,
+     .characteristics = (struct ble_gatt_chr_def[])
+         { {
+               .uuid = &gatt_svr_chr_temperature_stream_uuid.u,
+               .access_cb = gatt_svr_chr_access_all,
+               .val_handle = &temperature_notify_handle,
+               .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+           },
+           {
+               .uuid = &gatt_svr_chr_temperature_memory_status_uuid.u,
+               .access_cb = gatt_svr_chr_access_all,
+               .flags = BLE_GATT_CHR_F_INDICATE,
+           },
+           {
+               0, /* No more characteristics in this service. */
+           }
+         },
+    },
+    {
+    .type = BLE_GATT_SVC_TYPE_PRIMARY,
+    .uuid = &gatt_svr_chr_custom_humidity_service_uuid.u,
+    .characteristics = (struct ble_gatt_chr_def[])
+        { {
+                  .uuid = &gatt_svr_chr_humidity_stream_uuid.u,
+                  .access_cb = gatt_svr_chr_access_all,
+                  .val_handle = &humidity_notify_handle,
+                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+          },
+          {
+                  .uuid = &gatt_svr_chr_humidity_memory_status_uuid.u,
+                  .access_cb = gatt_svr_chr_access_all,
+                  .flags = BLE_GATT_CHR_F_INDICATE,
+          },
+          {
+                  0, /* No more characteristics in this service. */
+          }
         },
-        {
-                .type = BLE_GATT_SVC_TYPE_PRIMARY,
-                .uuid = &gatt_svr_svc_device_information_service_uuid.u,
-                .characteristics = (struct ble_gatt_chr_def[])
-                        { {
-                                  .uuid = &gatt_svr_chr_model_number_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_READ,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_serial_number_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_READ,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_firmware_revision_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_READ,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_manufacturer_name_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_READ,
-                          },
-                          {
-                                  0, /* No more characteristics in this service. */
-                          }
-                        },
+    },
+    {
+    .type = BLE_GATT_SVC_TYPE_PRIMARY,
+    .uuid = &gatt_svr_chr_custom_pressure_service_uuid.u,
+    .characteristics = (struct ble_gatt_chr_def[])
+        { {
+                  .uuid = &gatt_svr_chr__pressure_stream_uuid.u,
+                  .access_cb = gatt_svr_chr_access_all,
+                  .val_handle = &pressure_notify_handle,
+                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+          },
+          {
+                  .uuid = &gatt_svr_chr_pressure_memory_status_uuid.u,
+                  .access_cb = gatt_svr_chr_access_all,
+                  .flags = BLE_GATT_CHR_F_INDICATE,
+          },
+          {
+                  0, /* No more characteristics in this service. */
+          }
         },
-        {
-                .type = BLE_GATT_SVC_TYPE_PRIMARY,
-                .uuid = &gatt_svr_svc_custom_temperature_service_uuid.u,
-                .characteristics = (struct ble_gatt_chr_def[])
-                        { {
-                                  .uuid = &gatt_svr_chr_temperature_stream_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .val_handle = &temperature_notify_handle,
-                                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_temperature_memory_status_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_INDICATE,
-                          },
-                          {
-                                  0, /* No more characteristics in this service. */
-                          }
-                        },
+    },
+    {
+    .type = BLE_GATT_SVC_TYPE_PRIMARY,
+    .uuid = &gatt_svr_chr_custom_microphone_service_uuid.u,
+    .characteristics = (struct ble_gatt_chr_def[])
+        { {
+                  .uuid = &gatt_svr_chr_microphone_stream_uuid.u,
+                  .access_cb = gatt_svr_chr_access_all,
+                  .val_handle = &audio_notify_handle,
+                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+          },
+          {
+                  .uuid = &gatt_svr_chr_microphone_memory_status_uuid.u,
+                  .access_cb = gatt_svr_chr_access_all,
+                  .flags = BLE_GATT_CHR_F_INDICATE,
+          },
+          {
+                  0, /* No more characteristics in this service. */
+          }
         },
-        {
-                .type = BLE_GATT_SVC_TYPE_PRIMARY,
-                .uuid = &gatt_svr_chr_custom_humidity_service_uuid.u,
-                .characteristics = (struct ble_gatt_chr_def[])
-                        { {
-                                  .uuid = &gatt_svr_chr_humidity_stream_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .val_handle = &humidity_notify_handle,
-                                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_humidity_memory_status_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_INDICATE,
-                          },
-                          {
-                                  0, /* No more characteristics in this service. */
-                          }
-                        },
-        },
-        {
-                .type = BLE_GATT_SVC_TYPE_PRIMARY,
-                .uuid = &gatt_svr_chr_custom_pressure_service_uuid.u,
-                .characteristics = (struct ble_gatt_chr_def[])
-                        { {
-                                  .uuid = &gatt_svr_chr__pressure_stream_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .val_handle = &pressure_notify_handle,
-                                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_pressure_memory_status_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_INDICATE,
-                          },
-                          {
-                                  0, /* No more characteristics in this service. */
-                          }
-                        },
-        },
-        {
-                .type = BLE_GATT_SVC_TYPE_PRIMARY,
-                .uuid = &gatt_svr_chr_custom_microphone_service_uuid.u,
-                .characteristics = (struct ble_gatt_chr_def[])
-                        { {
-                                  .uuid = &gatt_svr_chr_microphone_stream_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .val_handle = &audio_notify_handle,
-                                  .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-                          },
-                          {
-                                  .uuid = &gatt_svr_chr_microphone_memory_status_uuid.u,
-                                  .access_cb = gatt_svr_chr_access_all,
-                                  .flags = BLE_GATT_CHR_F_INDICATE,
-                          },
-                          {
-                                  0, /* No more characteristics in this service. */
-                          }
-                        },
-        },
-        {
-                0, /* No more services. */
-        },
+    },
+    {
+     0, /* No more services. */
+    },
 };
 
 /* Private function definitions --------------------------------------------------------------------------------------*/
@@ -568,12 +570,12 @@ void send_temperature_notification(void) {
         struct os_mbuf *om;
 
         char * temperatureStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * temperatureStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * temperatureStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(temperatureStream != NULL && "Memory allocation failed for temperatureStream");
         assert(temperatureStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -581,7 +583,7 @@ void send_temperature_notification(void) {
             }
 
             saveFloatAsUint(ret, temperatureStreamTable);
-            memcpy(temperatureStream + (i*4), temperatureStreamTable, 4);
+            memcpy(temperatureStream + (i*FLOAT_LENGTH), temperatureStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(temperatureStream, PAYLOAD_SIZE);
@@ -604,13 +606,13 @@ void send_humidity_notification(void) {
 
         struct os_mbuf *om;
 
-        char * humdityStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * humidityStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        char * humidityStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
+        uint8_t * humidityStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
-        assert(humdityStream != NULL && "Memory allocation failed for humdityStream");
+        assert(humidityStream != NULL && "Memory allocation failed for humdityStream");
         assert(humidityStreamTable != NULL && "Memory allocation failed for humidityStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -618,10 +620,10 @@ void send_humidity_notification(void) {
             }
 
             saveFloatAsUint(ret, humidityStreamTable);
-            memcpy(humdityStream + (i*4), humidityStreamTable, 4);
+            memcpy(humidityStream + (i*FLOAT_LENGTH), humidityStreamTable, FLOAT_LENGTH);
         }
 
-        om = ble_hs_mbuf_from_flat(humdityStream, PAYLOAD_SIZE);
+        om = ble_hs_mbuf_from_flat(humidityStream, PAYLOAD_SIZE);
         rc = ble_gattc_notify_custom(conn_handle, humidity_notify_handle, om);
 
         if (rc != 0) {
@@ -631,7 +633,7 @@ void send_humidity_notification(void) {
         }
 
         free(humidityStreamTable);
-        free(humdityStream);
+        free(humidityStream);
 
     }
 }
@@ -643,12 +645,12 @@ void send_pressure_notification(void) {
         struct os_mbuf *om;
 
         char * pressureStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * pressureStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * pressureStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(pressureStream != NULL && "Memory allocation failed for pressureStream");
         assert(pressureStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -656,7 +658,7 @@ void send_pressure_notification(void) {
             }
 
             saveFloatAsUint(ret, pressureStreamTable);
-            memcpy(pressureStream + (i*4), pressureStreamTable, 4);
+            memcpy(pressureStream + (i*FLOAT_LENGTH), pressureStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(pressureStream, PAYLOAD_SIZE);
@@ -680,12 +682,12 @@ void send_audio_notification(void) {
         struct os_mbuf *om;
 
         char * audioStream = (char *)calloc(PAYLOAD_SIZE, sizeof(char));
-        uint8_t * audioStreamTable = (uint8_t *)calloc(4, sizeof(uint8_t));
+        uint8_t * audioStreamTable = (uint8_t *)calloc(FLOAT_LENGTH, sizeof(uint8_t));
 
         assert(audioStream != NULL && "Memory allocation failed for audioStream");
         assert(audioStreamTable != NULL && "Memory allocation failed for temperatureStreamTable");
 
-        for (int i = 0; i < (PAYLOAD_SIZE/4) ; i++) {
+        for (int i = 0; i < (PAYLOAD_SIZE/FLOAT_LENGTH) ; i++) {
             float ret = -1;
 
             while (ret == -1) {
@@ -693,7 +695,7 @@ void send_audio_notification(void) {
             }
 
             saveFloatAsUint(ret, audioStreamTable);
-            memcpy(audioStream + (i*4), audioStreamTable, 4);
+            memcpy(audioStream + (i*FLOAT_LENGTH), audioStreamTable, FLOAT_LENGTH);
         }
 
         om = ble_hs_mbuf_from_flat(audioStream, PAYLOAD_SIZE);
