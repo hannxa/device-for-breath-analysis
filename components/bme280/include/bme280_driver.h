@@ -33,8 +33,8 @@ extern "C" {
 #define BME280_TIMEOUT 5000
 #define BME280_DEVICE_ADDRESS 0x76
 #define BME280_DEVICE_ALTERNATIVE_ADDRESS 0x77
-#define BME280_SDA_PIN 8
-#define BME280_SCL_PIN 9
+#define BME280_SDA_PIN 6
+#define BME280_SCL_PIN 7
 
 /* Macros ---------------------------------------------------------------------------------------------------*/
 

@@ -40,7 +40,11 @@ i2c_master_bus_handle_t initializeI2CBus(uint8_t sda_pin, uint8_t scl_pin) {
             .flags.enable_internal_pullup = true,
     };
     i2c_master_bus_handle_t bus_handle;
-    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_config, &bus_handle));
+
+    esp_err_t ret = i2c_new_master_bus(&i2c_bus_config, &bus_handle);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize I2C bus: %s", esp_err_to_name(ret));
+    }
     ESP_LOGD(TAG,"I2C master bus created");
 
     return bus_handle;

@@ -11,6 +11,12 @@
 #ifndef _I2C_INTERFACE_H_
 #define _I2C_INTERFACE_H_
 
+#define I2C_MASTER_SCL_IO           9        /* GPIO number for I2C master clock */
+#define I2C_MASTER_SDA_IO           8        /* GPIO number for I2C master data */
+
+#define I2C_MASTER_SCL_IO_2         6
+#define I2C_MASTER_SDA_IO_2         7
+
 #ifdef __cplusplus
 extern "C" {
 #endif
