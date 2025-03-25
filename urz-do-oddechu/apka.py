@@ -9,6 +9,7 @@ import qasync
 from qasync import asyncSlot
 from datetime import datetime
 import csv
+from scipy.interpolate import make_interp_spline
 
 CURRENT_TIME_SERVICE_UUID = "1805"
 CURRENT_TIME_CHAR_UUID = "2A2B"
@@ -95,7 +96,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         # Inicjalizacja danych
         self.x_data = np.arange(0, 10, 0.1)
         self.y_data = np.zeros_like(self.x_data)
-        self.line, = ax.plot(self.x_data, self.y_data)
+        self.line, = ax.plot(self.x_data, self.y_data)  # Change to line plot with markers
 
         # Etykieta do wyświetlania czasu RTC
         self.rtc_label = QtWidgets.QLabel("Czas RTC: Nieznany")
@@ -223,6 +224,8 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         self.ble_data["pressure"].append(pressure)  # Append the new data as a new entry
         print(f"Pressure data: {pressure}")
 
+    graph_index = 0
+
     def update_graphs(self):
         print("update_graphs called")
 
@@ -245,15 +248,29 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                 "pressure": self.ble_data["pressure"][-1] if self.ble_data["pressure"] else []
             })
 
-            if self.ble_data["temperature"]:
-                self.update_graph(self.temperature_graph, self.ble_data["temperature"][-1])
-            if self.ble_data["humidity"]:
-                self.update_graph(self.humidity_graph, self.ble_data["humidity"][-1])
-            if self.ble_data["pressure"]:
-                self.update_graph(self.pressure_graph, self.ble_data["pressure"][-1])
+            # TEST
+            temperatures = [entry["temperature"] for entry in self.data_log if "temperature" in entry]
+            humidities = [entry["humidity"] for entry in self.data_log if "humidity" in entry]
+            pressures = [entry["pressure"] for entry in self.data_log if "pressure" in entry]
 
+            print(f'lenght of temperatures: {len(temperatures)}, graph_index: {self.graph_index}')
+            if len(temperatures) > self.graph_index+10 or self.graph_index == 0:
+                self.update_graph(self.temperature_graph, temperatures[self.graph_index : self.graph_index + 10])
+                self.update_graph(self.humidity_graph, humidities[self.graph_index : self.graph_index + 10])
+                self.update_graph(self.pressure_graph, pressures[self.graph_index : self.graph_index + 10])
+                self.graph_index+=1
+                
+            #if self.ble_data["humidity"]:
+            
+            #self.update_graph(self.humidity_graph, self.data_log["humidity"][self.graph_index : self.graph_index + 125])
+            #if self.ble_data["pressure"]:
+            
+            #self.update_graph(self.pressure_graph, self.data_log["pressure"][self.graph_index : self.graph_index + 125])
+
+        
         # Restart the timer to continuously update the graphs
-        self.timer.start(100)
+        self.timer.start(10)
+
 
     def update_graph(self, graph_widget, values):
         print(f"update_graph called for {graph_widget}")
@@ -261,17 +278,27 @@ class SensorGraphApp(QtWidgets.QMainWindow):
             print("No data to update the graph.")
             return
 
+        # Flatten the values list
+        flat_values = [item for sublist in values for item in sublist]
+
         canvas = graph_widget.layout().itemAt(1).widget()
         ax = canvas.figure.axes[0]
         line = ax.lines[0]
         y_data = line.get_ydata()
 
         # Append new values to the existing y_data
-        new_y_data = np.append(y_data, values)
-        if len(new_y_data) > len(self.x_data):
-            new_y_data = new_y_data[-len(self.x_data):]
+        if len(flat_values) > len(y_data):
+            flat_values = flat_values[-len(y_data):]
 
-        line.set_ydata(new_y_data)
+        y_data = np.roll(y_data, -len(flat_values))
+        y_data[-len(flat_values):] = flat_values
+
+        line.set_ydata(y_data)
+
+        # Update x_data to match the length of y_data
+        new_x_data = np.arange(self.graph_index, self.graph_index + len(y_data) * 0.1, 0.1)
+        line.set_xdata(new_x_data)
+
         ax.relim()
         ax.autoscale_view()
         canvas.draw()
