@@ -87,6 +87,7 @@ typedef struct bme280_config_t {
 
 /* Constants ------------------------------------------------------------------------------------------------*/
 #define CONFIG_BME280_DEFAULT_STANDBY_0M5 1
+#define CONFIG_BME280_DEFAULT_IIR_NONE 1
 
 #if (CONFIG_BME280_DEFAULT_TEMPERATURE_OVERSAMPLING_NONE)
 #define BME280_DEFAULT_TEMPERATURE_OVERSAMPLING BME280_TEMPERATURE_OVERSAMPLING_NONE

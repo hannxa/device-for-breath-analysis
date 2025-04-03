@@ -29,7 +29,7 @@ extern "C" {
 /* Types ----------------------------------------------------------------------------------------------------*/
 
 /* Constants ------------------------------------------------------------------------------------------------*/
-#define BME280_I2C_CLK_SPEED_HZ 1000000
+#define BME280_I2C_CLK_SPEED_HZ 3000000
 #define BME280_TIMEOUT 5000
 #define BME280_DEVICE_ADDRESS 0x76
 #define BME280_DEVICE_ALTERNATIVE_ADDRESS 0x77
