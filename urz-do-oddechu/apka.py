@@ -10,6 +10,8 @@ from qasync import asyncSlot
 from datetime import datetime
 import csv
 import os
+import scipy.signal as sig
+from scipy import signal
 
 CURRENT_TIME_SERVICE_UUID = "1805"
 CURRENT_TIME_CHAR_UUID = "2A2B"
@@ -31,6 +33,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         super().__init__()
         self.data_log = []
         self.x_slowdown_factor = 1
+        self.filter_window_size = 8
 
         self.setWindowTitle("Wykresy wartości z czujników (Bluetooth)")
         self.setGeometry(100, 100, 800, 600)
@@ -262,20 +265,31 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                 temperatures = temperatures[-max_points:]
                 x_data = x_data[-max_points:]
 
-            self.update_graph(self.temperature_graph, x_data, temperatures)
+            filtered_temperature = self.filter_data(temperatures)
+            self.update_graph(self.temperature_graph, x_data, filtered_temperature)
+            #self.update_graph(self.temperature_graph, x_data, temperatures)
+
 
             # To samo dla wilgotności i ciśnienia
             x_data = np.arange(0, len(humidities)) * 0.1 / self.x_slowdown_factor
             if len(humidities) > max_points:
                 humidities = humidities[-max_points:]
                 x_data = x_data[-max_points:]
-            self.update_graph(self.humidity_graph, x_data, humidities)
+
+            filtered_humidity = self.filter_data(humidities)
+            self.update_graph(self.humidity_graph, x_data, filtered_humidity)
+            #self.update_graph(self.humidity_graph, x_data, humidities)
+
 
             x_data = np.arange(0, len(pressures)) * 0.1 / self.x_slowdown_factor
             if len(pressures) > max_points:
                 pressures = pressures[-max_points:]
                 x_data = x_data[-max_points:]
-            self.update_graph(self.pressure_graph, x_data, pressures)
+
+            filtered_pressure = self.filter_data(pressures)
+            self.update_graph(self.pressure_graph, x_data, filtered_pressure)
+            #self.update_graph(self.pressure_graph, x_data, pressures)
+
 
         self.timer.start(200)
 
@@ -294,6 +308,23 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         ax.relim()
         ax.autoscale_view()
         canvas.draw()
+
+    def filter_data(self, y_data):
+        if len(y_data) < self.filter_window_size:
+            return y_data
+
+        if len(y_data) < self.filter_window_size:
+            return y_data
+
+        window = np.ones(self.filter_window_size) / self.filter_window_size
+        filtered = np.convolve(y_data, window, 'same')
+
+        half_window = self.filter_window_size // 2
+        filtered[:half_window] = y_data[:half_window]  # Keep first few points original
+        filtered[-half_window:] = y_data[-half_window:]  # Keep last few points original
+
+        return filtered
+
 
     def get_current_time_as_bytearray(self):
         now = datetime.now()
