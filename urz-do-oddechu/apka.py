@@ -9,7 +9,7 @@ import qasync
 from qasync import asyncSlot
 from datetime import datetime
 import csv
-from scipy.interpolate import make_interp_spline
+import os
 
 CURRENT_TIME_SERVICE_UUID = "1805"
 CURRENT_TIME_CHAR_UUID = "2A2B"
@@ -25,10 +25,12 @@ PRESSURE_STREAM_CHAR_UUID = "55FCD9B7-63B3-4820-A26C-73A8A7BB8D6F"
 
 DEVICE_NAME = "ID-169"
 
+
 class SensorGraphApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.data_log = []
+        self.x_slowdown_factor = 1
 
         self.setWindowTitle("Wykresy wartości z czujników (Bluetooth)")
         self.setGeometry(100, 100, 800, 600)
@@ -40,7 +42,8 @@ class SensorGraphApp(QtWidgets.QMainWindow):
 
         self.connection_label = QtWidgets.QLabel("Oczekiwanie na połączenie z urządzeniem Bluetooth...")
         self.connection_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.connection_label.setStyleSheet("font-size: 20px; font-weight: bold;  background-color: #D9C4DA; padding: 5px; border-radius: 15px;")
+        self.connection_label.setStyleSheet(
+            "font-size: 20px; font-weight: bold;  background-color: #D9C4DA; padding: 5px; border-radius: 15px;")
         self.layout.addWidget(self.connection_label)
 
         self.show_graphs_button = QtWidgets.QPushButton("ROZPOCZNIJ POMIARY")
@@ -53,7 +56,8 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         self.save_button.clicked.connect(self.save_to_csv)
         self.save_button.setVisible(False)
         self.layout.addWidget(self.save_button)
-        self.save_button.setStyleSheet("font-size: 20px; font-weight: bold;  background-color: #ADD8E6; padding: 5px; border-radius: 15px; border-width: 2px;")
+        self.save_button.setStyleSheet(
+            "font-size: 20px; font-weight: bold;  background-color: #ADD8E6; padding: 5px; border-radius: 15px; border-width: 2px;")
 
         self.tabs = QtWidgets.QTabWidget()
         self.layout.addWidget(self.tabs)
@@ -125,7 +129,8 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                 try:
                     await self.ble_client.connect()
                     print("Połączono z urządzeniem Bluetooth.")
-                    await self.ble_client.write_gatt_char(CURRENT_TIME_CHAR_UUID, self.get_current_time_as_bytearray(), response=False)
+                    await self.ble_client.write_gatt_char(CURRENT_TIME_CHAR_UUID, self.get_current_time_as_bytearray(),
+                                                          response=False)
                     self.connection_label.setText("Połączono z urządzeniem Bluetooth.")
                     self.show_graphs_button.setVisible(True)  # Pokazujemy przycisk
                     break
@@ -179,10 +184,10 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         if len(data) % 4 == 0:
             try:
                 for i in range(0, len(data), 4):
-                    float_value = np.frombuffer(data[i:i+4], dtype=np.float32)[0]
+                    float_value = np.frombuffer(data[i:i + 4], dtype=np.float32)[0]
                     temperature.append(float_value)
             except Exception as e:
-                int_values = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
+                int_values = int.from_bytes(data[i:i + 4], byteorder="little", signed=False)
                 temperature.append(int_values)
         else:
             print("nieprawidłowa dlugosc data z temperatury")
@@ -196,10 +201,10 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         if len(data) % 4 == 0:
             for i in range(0, len(data), 4):
                 try:
-                    float_value = np.frombuffer(data[i:i+4], dtype=np.float32)[0]
+                    float_value = np.frombuffer(data[i:i + 4], dtype=np.float32)[0]
                     humidity.append(float_value)
                 except Exception as e:
-                    int_value = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
+                    int_value = int.from_bytes(data[i:i + 4], byteorder="little", signed=False)
                     humidity.append(int_value)
         else:
             print("nieprawidłowa dlugosc data z wilgotnosci")
@@ -213,10 +218,10 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         if len(data) % 4 == 0:
             try:
                 for i in range(0, len(data), 4):
-                    float_value = np.frombuffer(data[i:i+4], dtype=np.float32)[0]
+                    float_value = np.frombuffer(data[i:i + 4], dtype=np.float32)[0]
                     pressure.append(float_value)
             except Exception as e:
-                int_value = int.from_bytes(data[i:i+4], byteorder="little", signed=False)
+                int_value = int.from_bytes(data[i:i + 4], byteorder="little", signed=False)
                 pressure.append(float(int_value))
         else:
             print("otrzymano nieprawidlowe dane")
@@ -228,13 +233,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
 
     def update_graphs(self):
         print("update_graphs called")
-
-        # Pobierz nowe dane z urządzenia BLE
         asyncio.create_task(self.read_rtc_time())
-
-        print("Temperature: ", self.ble_data["temperature"])
-        print("Humidity: ", self.ble_data["humidity"])
-        print("Pressure: ", self.ble_data["pressure"])
 
         if (self.ble_data["temperature"] and
                 self.ble_data["humidity"] and
@@ -248,56 +247,49 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                 "pressure": self.ble_data["pressure"][-1] if self.ble_data["pressure"] else []
             })
 
-            # TEST
-            temperatures = [entry["temperature"] for entry in self.data_log if "temperature" in entry]
-            humidities = [entry["humidity"] for entry in self.data_log if "humidity" in entry]
-            pressures = [entry["pressure"] for entry in self.data_log if "pressure" in entry]
+            # Pobierz wszystkie wartości do wyświetlenia
+            temperatures = [item for entry in self.data_log for item in
+                            (entry["temperature"] if entry["temperature"] else [])]
+            humidities = [item for entry in self.data_log for item in (entry["humidity"] if entry["humidity"] else [])]
+            pressures = [item for entry in self.data_log for item in (entry["pressure"] if entry["pressure"] else [])]
 
-            print(f'lenght of temperatures: {len(temperatures)}, graph_index: {self.graph_index}')
-            if len(temperatures) > self.graph_index+10 or self.graph_index == 0:
-                self.update_graph(self.temperature_graph, temperatures[self.graph_index : self.graph_index + 10])
-                self.update_graph(self.humidity_graph, humidities[self.graph_index : self.graph_index + 10])
-                self.update_graph(self.pressure_graph, pressures[self.graph_index : self.graph_index + 10])
-                self.graph_index+=1
-                
-            #if self.ble_data["humidity"]:
-            
-            #self.update_graph(self.humidity_graph, self.data_log["humidity"][self.graph_index : self.graph_index + 125])
-            #if self.ble_data["pressure"]:
-            
-            #self.update_graph(self.pressure_graph, self.data_log["pressure"][self.graph_index : self.graph_index + 125])
+            # Generuj oś X na podstawie liczby punktów danych
+            x_data = np.arange(0, len(temperatures)) * 0.1 / self.x_slowdown_factor
 
-        
-        # Restart the timer to continuously update the graphs
-        self.timer.start(10)
+            # Ogranicz do ostatnich 100 punktów dla lepszej wydajności
+            max_points = 100
+            if len(temperatures) > max_points:
+                temperatures = temperatures[-max_points:]
+                x_data = x_data[-max_points:]
 
+            self.update_graph(self.temperature_graph, x_data, temperatures)
 
-    def update_graph(self, graph_widget, values):
+            # To samo dla wilgotności i ciśnienia
+            x_data = np.arange(0, len(humidities)) * 0.1 / self.x_slowdown_factor
+            if len(humidities) > max_points:
+                humidities = humidities[-max_points:]
+                x_data = x_data[-max_points:]
+            self.update_graph(self.humidity_graph, x_data, humidities)
+
+            x_data = np.arange(0, len(pressures)) * 0.1 / self.x_slowdown_factor
+            if len(pressures) > max_points:
+                pressures = pressures[-max_points:]
+                x_data = x_data[-max_points:]
+            self.update_graph(self.pressure_graph, x_data, pressures)
+
+        self.timer.start(200)
+
+    def update_graph(self, graph_widget, x_data, y_data):
         print(f"update_graph called for {graph_widget}")
-        if values is None:
+        if not len(y_data):
             print("No data to update the graph.")
             return
-
-        # Flatten the values list
-        flat_values = [item for sublist in values for item in sublist]
 
         canvas = graph_widget.layout().itemAt(1).widget()
         ax = canvas.figure.axes[0]
         line = ax.lines[0]
-        y_data = line.get_ydata()
 
-        # Append new values to the existing y_data
-        if len(flat_values) > len(y_data):
-            flat_values = flat_values[-len(y_data):]
-
-        y_data = np.roll(y_data, -len(flat_values))
-        y_data[-len(flat_values):] = flat_values
-
-        line.set_ydata(y_data)
-
-        # Update x_data to match the length of y_data
-        new_x_data = np.arange(self.graph_index, self.graph_index + len(y_data) * 0.1, 0.1)
-        line.set_xdata(new_x_data)
+        line.set_data(x_data, y_data)
 
         ax.relim()
         ax.autoscale_view()
@@ -317,7 +309,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         day_of_week = (day_of_week + 1) % 7
 
         milliseconds = now.microsecond // 1000
-        milliseconds = int(milliseconds/256)
+        milliseconds = int(milliseconds / 256)
         adjust_reason = 0
 
         time_data = bytearray([
@@ -335,9 +327,13 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         return time_data
 
     def save_to_csv(self):
-        filename=f"C:\\Users\\Asus\\Desktop\\Ukady_Elektroniczne\\sensor_data_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.csv"
+        save_dir = "C:\\Users\\akabe\\Desktop\\esp_data"
+        os.makedirs(save_dir, exist_ok=True)
 
-        with open(filename, "w", newline="") as f:
+        filename = f"dane_sensorowe_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
+        full_path = os.path.join(save_dir, filename)
+
+        with open(full_path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["Temperature (°C)", "Humidity (%)", "Pressure"])
 
@@ -365,6 +361,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         if self.ble_client and self.ble_client.is_connected:
             asyncio.create_task(self.ble_client.disconnect())
         event.accept()
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
