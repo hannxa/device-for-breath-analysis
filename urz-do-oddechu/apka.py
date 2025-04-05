@@ -34,6 +34,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         self.data_log = []
         self.x_slowdown_factor = 1
         self.filter_window_size = 8
+        self.breath_threshold = 0.5  # Próg dla wykrywania wdechu (można dostosować)
 
         self.setWindowTitle("Wykresy wartości z czujników (Bluetooth)")
         self.setGeometry(100, 100, 800, 600)
@@ -51,7 +52,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
 
         self.show_graphs_button = QtWidgets.QPushButton("ROZPOCZNIJ POMIARY")
         self.show_graphs_button.clicked.connect(self.show_graphs)
-        self.show_graphs_button.setVisible(False)  # Przycisk jest ukryty na początku
+        self.show_graphs_button.setVisible(False)
         self.show_graphs_button.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.layout.addWidget(self.show_graphs_button)
 
@@ -68,7 +69,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
 
         self.temperature_graph = self.create_graph("Temperatura")
         self.humidity_graph = self.create_graph("Wilgotność")
-        self.pressure_graph = self.create_graph("Ciśnienie")
+        self.pressure_graph = self.create_pressure_graph("Ciśnienie - Wykrywanie wdechu")
 
         self.tabs.addTab(self.temperature_graph, "Temperatura")
         self.tabs.addTab(self.humidity_graph, "Wilgotność")
@@ -100,12 +101,36 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         ax.set_xlabel("Czas [s]")
         ax.set_ylabel("Wartość")
 
-        # Inicjalizacja danych
         self.x_data = np.arange(0, 10, 0.1)
         self.y_data = np.zeros_like(self.x_data)
-        self.line, = ax.plot(self.x_data, self.y_data)  # Change to line plot with markers
+        self.line, = ax.plot(self.x_data, self.y_data)
 
-        # Etykieta do wyświetlania czasu RTC
+        self.rtc_label = QtWidgets.QLabel("Czas RTC: Nieznany")
+        self.rtc_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.rtc_label.setStyleSheet("font-size: 16px;")
+        layout.addWidget(self.rtc_label)
+
+        layout.addWidget(canvas)
+        widget.setLayout(layout)
+
+        return widget
+
+    def create_pressure_graph(self, title):
+        widget = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout(widget)
+
+        figure = Figure()
+        canvas = FigureCanvas(figure)
+        ax = figure.add_subplot(111)
+        ax.set_title(title)
+        ax.set_xlabel("Czas [s]")
+        ax.set_ylabel("Ciśnienie")
+
+        self.x_pressure_data = np.arange(0, 10, 0.1)
+        self.y_pressure_data = np.zeros_like(self.x_pressure_data)
+        self.pressure_line, = ax.plot(self.x_pressure_data, self.y_pressure_data, 'b-')
+        self.inhale_markers, = ax.plot([], [], 'ro', markersize=5)  # Czerwone kropki dla wdechu
+
         self.rtc_label = QtWidgets.QLabel("Czas RTC: Nieznany")
         self.rtc_label.setAlignment(QtCore.Qt.AlignCenter)
         self.rtc_label.setStyleSheet("font-size: 16px;")
@@ -135,7 +160,7 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                     await self.ble_client.write_gatt_char(CURRENT_TIME_CHAR_UUID, self.get_current_time_as_bytearray(),
                                                           response=False)
                     self.connection_label.setText("Połączono z urządzeniem Bluetooth.")
-                    self.show_graphs_button.setVisible(True)  # Pokazujemy przycisk
+                    self.show_graphs_button.setVisible(True)
                     break
                 except Exception as e:
                     print(f"Błąd połączenia Bluetooth: {e}")
@@ -182,7 +207,6 @@ class SensorGraphApp(QtWidgets.QMainWindow):
             rtc_label.setText(f"Czas RTC: {time_str}")
 
     def handle_temperature_data(self, sender, data):
-        print("handle_temperature_data called")
         temperature = []
         if len(data) % 4 == 0:
             try:
@@ -195,11 +219,9 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         else:
             print("nieprawidłowa dlugosc data z temperatury")
 
-        self.ble_data["temperature"].append(temperature)  # Append the new data as a new entry
-        print(f"Temperature data: {temperature}")
+        self.ble_data["temperature"].append(temperature)
 
     def handle_humidity_data(self, sender, data):
-        print("handle_humidity_data called")
         humidity = []
         if len(data) % 4 == 0:
             for i in range(0, len(data), 4):
@@ -212,11 +234,9 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         else:
             print("nieprawidłowa dlugosc data z wilgotnosci")
 
-        self.ble_data["humidity"].append(humidity)  # Append the new data as a new entry
-        print(f"Humidity data: {humidity}")
+        self.ble_data["humidity"].append(humidity)
 
     def handle_pressure_data(self, sender, data):
-        print("handle_pressure_data called")
         pressure = []
         if len(data) % 4 == 0:
             try:
@@ -229,13 +249,22 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         else:
             print("otrzymano nieprawidlowe dane")
 
-        self.ble_data["pressure"].append(pressure)  # Append the new data as a new entry
-        print(f"Pressure data: {pressure}")
+        self.ble_data["pressure"].append(pressure)
 
-    graph_index = 0
+    def detect_inhale_points(self, pressure_data):
+        """Wykrywa punkty gwałtownego wzrostu ciśnienia (wdechu)"""
+        if len(pressure_data) < 2:
+            return []
+
+        # Oblicz różnice między kolejnymi próbkami
+        diffs = np.diff(pressure_data)
+
+        # Znajdź punkty gdzie różnica przekracza próg
+        inhale_indices = np.where(diffs > self.breath_threshold)[0] + 1  # +1 bo diff zmniejsza długość o 1
+
+        return inhale_indices
 
     def update_graphs(self):
-        print("update_graphs called")
         asyncio.create_task(self.read_rtc_time())
 
         if (self.ble_data["temperature"] and
@@ -250,27 +279,22 @@ class SensorGraphApp(QtWidgets.QMainWindow):
                 "pressure": self.ble_data["pressure"][-1] if self.ble_data["pressure"] else []
             })
 
-            # Pobierz wszystkie wartości do wyświetlenia
+            # Temperatura i wilgotność
             temperatures = [item for entry in self.data_log for item in
                             (entry["temperature"] if entry["temperature"] else [])]
             humidities = [item for entry in self.data_log for item in (entry["humidity"] if entry["humidity"] else [])]
             pressures = [item for entry in self.data_log for item in (entry["pressure"] if entry["pressure"] else [])]
 
-            # Generuj oś X na podstawie liczby punktów danych
-            x_data = np.arange(0, len(temperatures)) * 0.1 / self.x_slowdown_factor
-
-            # Ogranicz do ostatnich 100 punktów dla lepszej wydajności
+            # Ogranicz do ostatnich 100 punktów
             max_points = 100
+            x_data = np.arange(0, len(temperatures)) * 0.1 / self.x_slowdown_factor
             if len(temperatures) > max_points:
                 temperatures = temperatures[-max_points:]
                 x_data = x_data[-max_points:]
 
             filtered_temperature = self.filter_data(temperatures)
             self.update_graph(self.temperature_graph, x_data, filtered_temperature)
-            #self.update_graph(self.temperature_graph, x_data, temperatures)
 
-
-            # To samo dla wilgotności i ciśnienia
             x_data = np.arange(0, len(humidities)) * 0.1 / self.x_slowdown_factor
             if len(humidities) > max_points:
                 humidities = humidities[-max_points:]
@@ -278,25 +302,21 @@ class SensorGraphApp(QtWidgets.QMainWindow):
 
             filtered_humidity = self.filter_data(humidities)
             self.update_graph(self.humidity_graph, x_data, filtered_humidity)
-            #self.update_graph(self.humidity_graph, x_data, humidities)
 
-
+            # Aktualizacja wykresu ciśnienia z wykrywaniem wdechu
             x_data = np.arange(0, len(pressures)) * 0.1 / self.x_slowdown_factor
             if len(pressures) > max_points:
                 pressures = pressures[-max_points:]
                 x_data = x_data[-max_points:]
 
             filtered_pressure = self.filter_data(pressures)
-            self.update_graph(self.pressure_graph, x_data, filtered_pressure)
-            #self.update_graph(self.pressure_graph, x_data, pressures)
-
+            inhale_indices = self.detect_inhale_points(filtered_pressure)
+            self.update_pressure_graph(x_data, filtered_pressure, inhale_indices)
 
         self.timer.start(200)
 
     def update_graph(self, graph_widget, x_data, y_data):
-        print(f"update_graph called for {graph_widget}")
         if not len(y_data):
-            print("No data to update the graph.")
             return
 
         canvas = graph_widget.layout().itemAt(1).widget()
@@ -309,10 +329,30 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         ax.autoscale_view()
         canvas.draw()
 
-    def filter_data(self, y_data):
-        if len(y_data) < self.filter_window_size:
-            return y_data
+    def update_pressure_graph(self, x_data, y_data, inhale_indices):
+        """Aktualizacja wykresu ciśnienia z zaznaczeniem wdechów"""
+        if not len(y_data):
+            return
 
+        canvas = self.pressure_graph.layout().itemAt(1).widget()
+        ax = canvas.figure.axes[0]
+
+        # Aktualizuj linię ciśnienia
+        self.pressure_line.set_data(x_data, y_data)
+
+        # Zaznacz punkty wdechu czerwonymi kropkami
+        if len(inhale_indices) > 0:
+            inhale_x = x_data[inhale_indices]
+            inhale_y = y_data[inhale_indices]
+            self.inhale_markers.set_data(inhale_x, inhale_y)
+        else:
+            self.inhale_markers.set_data([], [])
+
+        ax.relim()
+        ax.autoscale_view()
+        canvas.draw()
+
+    def filter_data(self, y_data):
         if len(y_data) < self.filter_window_size:
             return y_data
 
@@ -320,11 +360,10 @@ class SensorGraphApp(QtWidgets.QMainWindow):
         filtered = np.convolve(y_data, window, 'same')
 
         half_window = self.filter_window_size // 2
-        filtered[:half_window] = y_data[:half_window]  # Keep first few points original
-        filtered[-half_window:] = y_data[-half_window:]  # Keep last few points original
+        filtered[:half_window] = y_data[:half_window]
+        filtered[-half_window:] = y_data[-half_window:]
 
         return filtered
-
 
     def get_current_time_as_bytearray(self):
         now = datetime.now()
@@ -366,25 +405,30 @@ class SensorGraphApp(QtWidgets.QMainWindow):
 
         with open(full_path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["Temperature (°C)", "Humidity (%)", "Pressure"])
-
-            print(len(self.data_log))
-            print("Data log:", self.data_log)
+            writer.writerow(["Temperature (°C)", "Humidity (%)", "Pressure", "Inhale"])
 
             for entry in self.data_log:
                 temperatures = entry["temperature"] or []
                 humidities = entry["humidity"] or []
                 pressures = entry["pressure"] or []
 
+                # Dla każdej próbki ciśnienia określ czy to wdech
+                filtered_pressure = self.filter_data(pressures) if pressures else []
+                inhale_indices = self.detect_inhale_points(filtered_pressure) if filtered_pressure else []
+                inhale_flags = [0] * len(pressures)
+                for idx in inhale_indices:
+                    if idx < len(inhale_flags):
+                        inhale_flags[idx] = 1
+
                 max_length = max(len(temperatures), len(humidities), len(pressures))
                 for i in range(max_length):
                     row = [
                         temperatures[i] if i < len(temperatures) else "",
                         humidities[i] if i < len(humidities) else "",
-                        pressures[i] if i < len(pressures) else ""
+                        pressures[i] if i < len(pressures) else "",
+                        inhale_flags[i] if i < len(inhale_flags) else ""
                     ]
                     writer.writerow(row)
-                    print("Row:", row)
 
         print(f"Dane zapisane do {filename}")
 
