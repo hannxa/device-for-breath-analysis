@@ -5,6 +5,6 @@ The system runs on FreeRTOS, enabling efficient real-time task management.
 Development is carried out using ESP-IDF (Espressif IoT Development Framework), which provides essential tools and libraries for hardware control and communication.
 
 Communication Interfaces
-*** I2C *** – used for interfacing with the BME280 sensor
-*** Bluetooth Low Energy (BLE) *** – enables wireless data transmission between components
+***I2C*** – used for interfacing with the BME280 sensor
+***Bluetooth Low Energy (BLE)*** – enables wireless data transmission between components
 
