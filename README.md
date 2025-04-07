@@ -6,5 +6,6 @@ Development is carried out using ESP-IDF (Espressif IoT Development Framework), 
 
 Communication Interfaces
 ***I2C*** – used for interfacing with the BME280 sensor
+
 ***Bluetooth Low Energy (BLE)*** – enables wireless data transmission between components
 
